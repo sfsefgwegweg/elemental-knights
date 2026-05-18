@@ -1667,9 +1667,14 @@ function updateAllUI(){
 
   // Stage / enemy count
   if(en){
-    const stg=STAGES[b.stageIdx];
-    document.getElementById('i-stage').textContent=`STAGE ${stg.id}: ${stg.name}`;
-    document.getElementById('stage-count').textContent=`${b.qIdx+1}/${b.queue.length}`;
+    if(b.endless){
+      document.getElementById('i-stage').textContent=`♾️ WAVE ${b.wave}`;
+      document.getElementById('stage-count').textContent=b.wave%5===0?'👑 BOSS':'';
+    } else {
+      const stg=STAGES[b.stageIdx];
+      document.getElementById('i-stage').textContent=`STAGE ${stg.id}: ${stg.name}`;
+      document.getElementById('stage-count').textContent=`${b.qIdx+1}/${b.queue.length}`;
+    }
     // Enemy HP
     const ep=Math.max(0,en.hp/en.maxHp*100);
     document.getElementById('e-hp-bar').style.width=ep+'%';
