@@ -1248,11 +1248,10 @@ function startNextEnemy(){
   const b=G.battle;
 
   if(b.endless){
-    // 무제한 모드: 현재 웨이브 몬스터 생성
-    b.enemy=generateEndlessEnemy(b.wave);
+    b.enemy=b.queue[b.qIdx];
     b.over=false;b.running=false;
     document.getElementById('i-stage').textContent=`♾️ WAVE ${b.wave}`;
-    document.getElementById('stage-count').textContent=b.wave%5===0?'👑 BOSS':'';
+    document.getElementById('stage-count').textContent=`${b.qIdx+1}/${b.queue.length}`;
   } else {
     if(b.qIdx>=b.queue.length){
       G.progress[b.stageIdx]=true;
@@ -1405,6 +1404,11 @@ async function onEnemyDead(){
   await sleep(900);sp.style.opacity='0';
 
   if(b.endless){
+    b.qIdx++;
+    if(b.qIdx<b.queue.length){
+      setTimeout(()=>startNextEnemy(),400);
+      return;
+    }
     if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();}
     await sleep(300);
     showWaveLoot(b.wave);
@@ -2192,7 +2196,7 @@ function afterLoot(){
 //  무제한 스테이지
 // ════════════════════════════════════════════════
 function enterEndlessStage(){
-  G.battle={stageIdx:-1,endless:true,wave:1,queue:[],qIdx:0,
+  G.battle={stageIdx:-1,endless:true,wave:1,queue:generateWaveQueue(1),qIdx:0,
     enemy:null,over:false,running:false,playerDead:false,
     stageLoot:{items:[],stones:{}}};
   G.phase='battle';
@@ -2209,21 +2213,38 @@ function enterEndlessStage(){
   startNextEnemy();
 }
 
-function generateEndlessEnemy(wave){
-  const isBoss=wave%5===0;
-  const pool=isBoss?ENEMIES.filter(e=>e.boss):ENEMIES.filter(e=>!e.boss);
-  const tmpl=pool[Math.floor(Math.random()*pool.length)];
-  const scale=1+wave*0.22;
+function generateWaveQueue(wave){
+  const isBossWave=wave%5===0;
+  const normalPool=ENEMIES.filter(e=>!e.boss);
+  const bossPool=ENEMIES.filter(e=>e.boss);
+  const enemies=[];
+  for(let i=0;i<5;i++){
+    const tmpl=normalPool[Math.floor(Math.random()*normalPool.length)];
+    enemies.push(generateEndlessEnemy(wave,false,tmpl));
+  }
+  if(isBossWave){
+    const tmpl=bossPool[Math.floor(Math.random()*bossPool.length)];
+    enemies.push(generateEndlessEnemy(wave,true,tmpl));
+  }
+  return enemies;
+}
+
+function generateEndlessEnemy(wave,isBoss,tmpl){
+  if(!tmpl){
+    const pool=isBoss?ENEMIES.filter(e=>e.boss):ENEMIES.filter(e=>!e.boss);
+    tmpl=pool[Math.floor(Math.random()*pool.length)];
+  }
+  const scale=1+wave*0.01;
   const bMult=isBoss?2.2:1;
   const hp=Math.floor(tmpl.hp*scale*bMult);
   return{
     ...tmpl,
-    name:wave>=10?`[강화] ${tmpl.name}`:tmpl.name,
+    name:wave>=50?`[강화] ${tmpl.name}`:tmpl.name,
     hp,maxHp:hp,
     attack:Math.floor(tmpl.attack*scale*(isBoss?1.5:1)),
     defense:Math.floor(tmpl.defense*scale),
-    luck:Math.min(tmpl.luck+Math.floor(wave/3),45),
-    boss:isBoss,
+    luck:Math.min(tmpl.luck+Math.floor(wave/10),45),
+    boss:!!isBoss,
   };
 }
 
@@ -2285,6 +2306,8 @@ function showWaveLoot(wave){
 function continueEndlessWave(){
   const b=G.battle;
   b.wave++;
+  b.queue=generateWaveQueue(b.wave);
+  b.qIdx=0;
   b.over=false;b.running=false;b.playerDead=false;
   const heal=Math.floor((G.player.maxHp-G.player.hp)*.2);
   if(heal>0){
