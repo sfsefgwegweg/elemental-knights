@@ -1256,6 +1256,30 @@ function synthRate(item, statKey){
   return spec.includes(statKey) ? 0.8 : 0.6;
 }
 
+const STAT_KEYS=['attack','defense','hp','luck'];
+
+// 아이템이 가질 수 있는 능력치 종류 수 = max(2, 원래 기본 능력치 종류 수)
+function statTypeCap(item){
+  const baseTypes=STAT_KEYS.filter(k=>(item.stats?.[k]||0)>0).length;
+  return Math.max(2, baseTypes);
+}
+
+// 합성 시 추가될 능력치를, 허용된 종류 수 안에서만 부여하도록 필터링
+function capGains(item, rawGains){
+  const cap=statTypeCap(item);
+  const active=new Set(STAT_KEYS.filter(
+    k=>((item.stats?.[k]||0)+(item.bonus?.[k]||0))>0));
+  const out={};
+  for(const k of STAT_KEYS){
+    const v=rawGains[k]||0;
+    if(v<=0){ out[k]=0; continue; }
+    if(active.has(k)){ out[k]=v; }
+    else if(active.size<cap){ active.add(k); out[k]=v; }
+    else { out[k]=0; } // 종류 한도 초과 → 부여 불가
+  }
+  return out;
+}
+
 // 아이템 아이콘 HTML 반환 (이미지 있으면 img, 없으면 이모지)
 function itemIconHtml(item, size='28px'){
   if(item && item.img){
@@ -2241,28 +2265,32 @@ function renderManageOv(){
   else if(syn.leftIsStone){
     const el=syn.left.element;
     const sameEl=(syn.left.element===syn.right.element);
-    const stoneGained={};
-    for(const sk of ['attack','defense','hp','luck']){
+    const raw={};
+    for(const sk of STAT_KEYS){
       const base=syn.left.stats[sk]||0; if(!base) continue;
       let rate=synthRate(syn.left,sk);
       if(sameEl) rate=Math.min(rate+0.1,0.9);
-      stoneGained[sk]=Math.floor(base*rate);
+      raw[sk]=Math.floor(base*rate);
     }
+    const stoneGained=capGains(syn.right,raw);
+    const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(stoneGained[k]>0));
     const stoneStr=Object.entries(stoneGained).filter(([,v])=>v>0)
       .map(([k,v])=>`<span style="color:${sameEl?'#ffe080':'#80e080'}">${statSym(k)}+${v}${sameEl?'🔥':''}</span>`).join(' ');
-    prev.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 속성 → <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span>${stoneStr?` &nbsp;+&nbsp;${stoneStr}`:''}`;
+    prev.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 속성 → <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span>${stoneStr?` &nbsp;+&nbsp;${stoneStr}`:''}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.right)}</span>`:''}`;
     btn.disabled=false;
   } else {
-    const gained={};
-    for(const sk of ['attack','defense','hp','luck']){
+    const raw={};
+    for(const sk of STAT_KEYS){
       const rate=synthRate(syn.left,sk);
-      gained[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*rate);
+      raw[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*rate);
     }
+    const gained=capGains(syn.right,raw);
+    const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(gained[k]>0));
     const txt=Object.entries(gained).filter(([,v])=>v>0).map(([k,v])=>{
       const isSpec=(SYNTH_SPECIALTY[syn.left.type]||[]).includes(k);
       return `<span style="color:${isSpec?'#80ff80':'#d0c080'}">${statSym(k)}+${v}${isSpec?'★':''}</span>`;
     }).join(' ');
-    prev.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 흡수: ${txt||'(없음)'}`;
+    prev.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 흡수: ${txt||'(없음)'}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.right)}</span>`:''}`;
     btn.disabled=false;
   }
 
@@ -2480,26 +2508,30 @@ function updateSynthPreview(){
   if(syn.leftIsStone){
     const el=syn.left.element;
     const sameEl=(syn.left.element===syn.right.element);
-    const stoneGained={};
-    for(const sk of ['attack','defense','hp','luck']){
+    const raw={};
+    for(const sk of STAT_KEYS){
       const base=syn.left.stats[sk]||0; if(!base) continue;
       let rate=synthRate(syn.left,sk);
       if(sameEl) rate=Math.min(rate+0.1,0.9);
-      stoneGained[sk]=Math.floor(base*rate);
+      raw[sk]=Math.floor(base*rate);
     }
+    const stoneGained=capGains(syn.right,raw);
+    const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(stoneGained[k]>0));
     const stoneStr=Object.entries(stoneGained).filter(([,v])=>v>0)
       .map(([k,v])=>`${statSym(k)}+${v}${sameEl?'🔥':''}`).join(' ');
     res.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 속성 →
       <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span><br>
-      ${stoneStr?`<span style="color:${sameEl?'#ffe080':'#80e080'}">${stoneStr} 강화${sameEl?' (동일속성 보너스)':''}</span><br>`:''}원소석 1개 소비`;
+      ${stoneStr?`<span style="color:${sameEl?'#ffe080':'#80e080'}">${stoneStr} 강화${sameEl?' (동일속성 보너스)':''}</span><br>`:''}${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.right)})</span><br>`:''}원소석 1개 소비`;
   } else {
-    const gained={};
-    for(const sk of ['attack','defense','hp','luck'])
-      gained[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*.65);
+    const raw={};
+    for(const sk of STAT_KEYS)
+      raw[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*.65);
+    const gained=capGains(syn.right,raw);
+    const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(gained[k]>0));
     const txt=Object.entries(gained).filter(([,v])=>v>0).map(([k,v])=>`${statSym(k)}+${v}`).join(' ');
     res.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span>이(가)<br>
       ${txt||'(없음)'} 흡수<br>
-      <span style="color:#e05040">${syn.left.name}</span> 소비됨`;
+      ${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.right)})</span><br>`:''}<span style="color:#e05040">${syn.left.name}</span> 소비됨`;
   }
   btn.disabled=false;
 }
@@ -2574,21 +2606,27 @@ function doSynth(){
     right.element=syn.left.element;
     if(!right.bonus) right.bonus={attack:0,defense:0,hp:0,luck:0};
     const sameEl=(syn.left.element===right.element);
-    for(const sk of ['attack','defense','hp','luck']){
+    const raw={};
+    for(const sk of STAT_KEYS){
       const base=syn.left.stats[sk]||0;
       if(!base) continue;
       let rate=synthRate(syn.left,sk);           // 특화 80%, 일반 60%
       if(sameEl) rate=Math.min(rate+0.1, 0.9);  // 동일속성 +10% (최대 90%)
-      right.bonus[sk]=(right.bonus[sk]||0)+Math.floor(base*rate);
+      raw[sk]=Math.floor(base*rate);
     }
+    const gains=capGains(right,raw);
+    for(const sk of STAT_KEYS) if(gains[sk]) right.bonus[sk]=(right.bonus[sk]||0)+gains[sk];
     p.stones[syn.left.element]--;
   } else {
     // 아이템 합성: 특화 스탯 80%, 일반 스탯 60% 흡수
     if(!right.bonus) right.bonus={attack:0,defense:0,hp:0,luck:0};
-    for(const sk of ['attack','defense','hp','luck']){
-      const rate=synthRate(syn.left.type, sk);
-      right.bonus[sk]=(right.bonus[sk]||0)+Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*rate);
+    const raw={};
+    for(const sk of STAT_KEYS){
+      const rate=synthRate(syn.left, sk);
+      raw[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*rate);
     }
+    const gains=capGains(right,raw);
+    for(const sk of STAT_KEYS) if(gains[sk]) right.bonus[sk]=(right.bonus[sk]||0)+gains[sk];
     // 재료 제거 (인벤토리 또는 장착슬롯에서)
     const li=p.inventory.indexOf(syn.left);
     if(li!==-1){
