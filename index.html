@@ -1280,17 +1280,26 @@ function renderWorld(){
   document.getElementById('wo-stones').textContent=
     `💧${p.stones.water} 🔥${p.stones.fire} 🌿${p.stones.grass}`;
 
-  // 무제한 스테이지 카드
+  // 무제한 스테이지 카드 (스테이지 4까지 모두 클리어 시 해금)
+  const endlessUnlocked=G.progress.every(p=>p);
   const ec=document.createElement('div');
-  ec.className='stage-card slide-in endless-card';
+  ec.className='stage-card slide-in endless-card'+(endlessUnlocked?'':' locked');
   ec.style.cssText='grid-column:1/-1;border-color:#5a3a70;';
-  ec.innerHTML=`
-    <div class="sc-emoji">♾️</div>
-    <div class="sc-name" style="color:#d0a0f0;">무제한 스테이지</div>
-    <div class="sc-el" style="color:#9060c0;">🎲 랜덤 몬스터 · 5웨이브마다 보스</div>
-    <div style="font-size:10px;color:#6a4a8a;margin-top:4px;">최고 기록: WAVE <b style="color:#c090e0">${G.endlessBest||0}</b></div>
-    <div class="sc-badge" style="color:#c080e0;">∞</div>`;
-  ec.onclick=()=>enterEndlessStage();
+  if(endlessUnlocked){
+    ec.innerHTML=`
+      <div class="sc-emoji">♾️</div>
+      <div class="sc-name" style="color:#d0a0f0;">무제한 스테이지</div>
+      <div class="sc-el" style="color:#9060c0;">🎲 랜덤 몬스터 · 5웨이브마다 보스</div>
+      <div style="font-size:10px;color:#6a4a8a;margin-top:4px;">최고 기록: WAVE <b style="color:#c090e0">${G.endlessBest||0}</b></div>
+      <div class="sc-badge" style="color:#c080e0;">∞</div>`;
+    ec.onclick=()=>enterEndlessStage();
+  } else {
+    ec.innerHTML=`
+      <div class="sc-emoji">🔒</div>
+      <div class="sc-name" style="color:#9060c0;">무제한 스테이지</div>
+      <div class="sc-el" style="color:#6a4a8a;">STAGE 4까지 모두 클리어하면 해금됩니다</div>
+      <div class="sc-badge" style="color:#6a4a8a;">🔒</div>`;
+  }
   grid.appendChild(ec);
 }
 
