@@ -647,7 +647,9 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   letter-spacing:1px;
 }
 #user-info{
+  position:absolute;top:4px;right:8px;z-index:200;
   display:flex;align-items:center;gap:6px;font-size:9px;color:#5a3818;
+  background:rgba(8,5,2,.82);padding:3px 8px;border:1px solid #3a2406;
 }
 .logout-btn{
   padding:2px 7px;border:1px solid #4a2a08;background:transparent;
@@ -2631,7 +2633,13 @@ async function doGoogleAuth(){
 }
 
 // ── 로그아웃 ──
-function doLogout(){ _auth.signOut(); }
+function doLogout(){
+  if(G.battle){ G.battle.over=true; G.battle.running=false; }
+  G.phase='idle';
+  const eb=document.getElementById('exit-battle-btn');
+  if(eb) eb.style.display='none';
+  _auth.signOut();
+}
 
 function _fbErr(code){
   return ({
