@@ -1027,8 +1027,8 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
 <div id="gameover-ov" class="overlay">
   <div class="end-icon">💀</div>
   <div class="end-title" style="color:#e04040;">GAME OVER</div>
-  <div class="end-sub">용사는 쓰러졌습니다...</div>
-  <button class="btn btn-danger" onclick="resetGame()">↺  처음부터</button>
+  <div class="end-sub">용사는 쓰러졌습니다... 마을에서 다시 도전하세요.</div>
+  <button class="btn btn-green" onclick="returnToTown()">🏠  마을로 돌아가기</button>
 </div>
 
 <!-- Victory -->
@@ -1199,7 +1199,7 @@ function pStats(){
     if(eq){
       atk +=(eq.stats.attack||0)+(eq.bonus?.attack||0);
       def +=(eq.stats.defense||0)+(eq.bonus?.defense||0);
-      hp  +=(eq.stats.hp||0)+(eq.bonus?.hp||0);
+      hp  +=((eq.stats.hp||0)+(eq.bonus?.hp||0))*.7;
       luck+=(eq.stats.luck||0)+(eq.bonus?.luck||0);
       if(sl==='weapon'&&eq.element!=='normal') el=eq.element;
     }
@@ -1209,7 +1209,7 @@ function pStats(){
     if(b.stat==='defense') def+=b.amount;
     if(b.stat==='luck') luck+=b.amount;
   }
-  return {atk:Math.max(1,atk),def:Math.max(0,def),hp:Math.max(10,hp),luck:Math.min(95,luck),el};
+  return {atk:Math.max(1,atk),def:Math.max(0,def),hp:Math.max(10,Math.floor(hp)),luck:Math.min(95,luck),el};
 }
 
 function iInst(t){return{...t,stats:{...t.stats},bonus:{attack:0,defense:0,hp:0,luck:0}};}
@@ -1254,6 +1254,21 @@ function resetGame(){
   G.progress=[false,false,false,false];
   G.battle.running=false;
   G.phase='idle';
+  showOverlay('world-ov');
+  renderWorld();
+  renderBottomUI();
+  saveGame();
+}
+
+// 사망 후 마을 복귀 — 아이템/장비/진행도 모두 유지, 체력만 회복
+function returnToTown(){
+  if(G.battle){G.battle.over=true;G.battle.running=false;}
+  G.phase='idle';
+  G.player.buffs=[];
+  const st=pStats();
+  G.player.maxHp=st.hp;
+  G.player.hp=G.player.maxHp;
+  document.getElementById('exit-battle-btn').style.display='none';
   showOverlay('world-ov');
   renderWorld();
   renderBottomUI();
@@ -2839,8 +2854,14 @@ function _showSaved(){
 // ── finishStageClear 에 저장 연결 ──
 function finishStageClear(){
   document.getElementById('exit-battle-btn').style.display='none';
+  // 스테이지 종료 시 체력 전체 회복
+  const st=pStats();
+  G.player.maxHp=st.hp;
+  G.player.hp=G.player.maxHp;
+  G.player.buffs=[];
   showOverlay(null);
   renderWorld();
+  renderBottomUI();
   setTimeout(()=>showOverlay('world-ov'), 300);
   saveGame();
 }
