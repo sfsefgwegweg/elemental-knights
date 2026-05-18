@@ -618,6 +618,24 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
 .google-btn:hover{background:#1e1e3a;border-color:#8080cc;}
 .auth-switch{font-size:10px;color:#5a3a18;text-align:center;cursor:default;}
 .auth-switch span{color:#c08030;text-decoration:underline;cursor:pointer;}
+/* 랭킹 오버레이 */
+#ranking-ov{background:rgba(5,3,8,.95);backdrop-filter:blur(2px);}
+.rank-box{
+  background:#0d0904;border:2px solid #6a3a10;padding:20px;width:500px;
+  max-height:85vh;overflow-y:auto;box-shadow:0 0 40px rgba(180,110,20,.3);
+  display:flex;flex-direction:column;gap:12px;
+}
+.rank-title{text-align:center;font-size:18px;color:#f0c060;letter-spacing:3px;
+  border-bottom:1px solid #3a2008;padding-bottom:10px;}
+.rank-row{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border:1px solid #2a1806;background:#080602;font-size:12px;
+}
+.rank-row.me{border-color:#c08030;background:#140c03;}
+.rank-no{font-size:16px;min-width:32px;text-align:center;}
+.rank-name{flex:1;color:#d0a050;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rank-wave{color:#f0c060;font-weight:bold;letter-spacing:1px;}
+.rank-empty{text-align:center;color:#4a3010;font-size:11px;padding:20px;}
 #save-indicator{
   font-size:9px;color:#50c050;opacity:0;transition:opacity .4s;
   letter-spacing:1px;
@@ -852,7 +870,10 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
       <div style="font-size:10px;color:#4a3010;">
         클리어된 스테이지 순서로 진행 &nbsp;|&nbsp; 원소석: <span id="wo-stones"></span>
       </div>
-      <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="openManageOv()">🎒 인벤토리 / 합성</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="showRankings()">🏆 랭킹</button>
+        <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="openManageOv()">🎒 인벤토리 / 합성</button>
+      </div>
     </div>
   </div>
 </div>
@@ -949,6 +970,16 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
     <div class="sc-actions">
       <button class="btn btn-green" onclick="finishStageClear()">✅ 완료 → 월드맵</button>
     </div>
+  </div>
+</div>
+
+<!-- Ranking -->
+<div id="ranking-ov" class="overlay">
+  <div class="rank-box slide-in">
+    <div class="rank-title">🏆 무제한 스테이지 랭킹</div>
+    <div id="rank-list"><div class="rank-empty">로딩 중...</div></div>
+    <div style="text-align:center;font-size:10px;color:#4a3010;margin-top:4px;" id="rank-myinfo"></div>
+    <button class="btn" style="padding:7px;font-size:11px;" onclick="closeRankings()">✕ 닫기</button>
   </div>
 </div>
 
@@ -1409,7 +1440,7 @@ async function onEnemyDead(){
       setTimeout(()=>startNextEnemy(),400);
       return;
     }
-    if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();}
+    if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();updateRanking(b.wave);}
     await sleep(300);
     showWaveLoot(b.wave);
     return;
@@ -1432,7 +1463,7 @@ async function onPlayerDead(){
   const b=G.battle;b.over=true;b.playerDead=true;
   if(b.endless){
     addLog(`💀 WAVE ${b.wave}에서 쓰러졌습니다...`,'dmg');
-    if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();}
+    if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();updateRanking(b.wave);}
   } else {
     addLog('💀 쓰러졌습니다...','dmg');
   }
@@ -2613,6 +2644,64 @@ async function loadGame(){
     return true;
   } catch(e){ console.error('불러오기 실패:', e); return false; }
 }
+
+// ════════════════════════════════════════════════
+//  랭킹
+// ════════════════════════════════════════════════
+async function updateRanking(wave){
+  if(!_currentUser) return;
+  try{
+    await _db.collection('rankings').doc(_currentUser.uid).set({
+      displayName: _currentUser.displayName||_currentUser.email||'익명',
+      bestWave: wave,
+      uid: _currentUser.uid,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  }catch(e){console.error('랭킹 업데이트 실패:',e);}
+}
+
+async function showRankings(){
+  showOverlay('ranking-ov');
+  document.getElementById('rank-list').innerHTML='<div class="rank-empty">불러오는 중...</div>';
+  try{
+    const snap=await _db.collection('rankings').orderBy('bestWave','desc').limit(20).get();
+    const entries=[];
+    snap.forEach(doc=>entries.push({...doc.data(),uid:doc.id}));
+
+    const medals=['🥇','🥈','🥉'];
+    const myUid=_currentUser?.uid;
+    let myRank=-1;
+
+    const list=document.getElementById('rank-list');
+    if(entries.length===0){
+      list.innerHTML='<div class="rank-empty">아직 기록이 없습니다.<br>무제한 스테이지를 플레이해보세요!</div>';
+      return;
+    }
+
+    list.innerHTML='';
+    entries.forEach((e,i)=>{
+      const isMe=e.uid===myUid;
+      if(isMe) myRank=i+1;
+      const row=document.createElement('div');
+      row.className='rank-row'+(isMe?' me':'');
+      row.innerHTML=`
+        <div class="rank-no">${medals[i]||`${i+1}`}</div>
+        <div class="rank-name">${isMe?'⭐ ':''} ${e.displayName}</div>
+        <div class="rank-wave">WAVE ${e.bestWave}</div>`;
+      list.appendChild(row);
+    });
+
+    const info=document.getElementById('rank-myinfo');
+    if(myRank>0) info.textContent=`내 순위: ${myRank}위 · 최고 기록 WAVE ${G.endlessBest}`;
+    else if(G.endlessBest>0) info.textContent=`내 기록: WAVE ${G.endlessBest} (아직 20위 밖)`;
+    else info.textContent='무제한 스테이지를 플레이하면 순위에 등록됩니다.';
+  }catch(e){
+    console.error(e);
+    document.getElementById('rank-list').innerHTML='<div class="rank-empty">불러오기 실패</div>';
+  }
+}
+
+function closeRankings(){showOverlay('world-ov');renderWorld();}
 
 function _showSaved(){
   const el = document.getElementById('save-indicator');
