@@ -910,14 +910,14 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   <div class="world-box slide-in">
     <div class="world-title">🗺️ 스테이지 선택</div>
     <div class="stage-cards" id="stage-cards"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
-      <div style="font-size:10px;color:#4a3010;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
+      <div style="font-size:10px;color:#4a3010;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
         클리어된 스테이지 순서로 진행 &nbsp;|&nbsp; 원소석: <span id="wo-stones"></span>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="showMyInfo()">👤 내정보</button>
-        <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="showRankings()">🏆 랭킹</button>
-        <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="openManageOv()">🎒 인벤토리 / 합성</button>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn" style="padding:5px 12px;font-size:11px;white-space:nowrap;" onclick="showMyInfo()">👤 내정보</button>
+        <button class="btn" style="padding:5px 12px;font-size:11px;white-space:nowrap;" onclick="showRankings()">🏆 랭킹</button>
+        <button class="btn" style="padding:5px 12px;font-size:11px;white-space:nowrap;" onclick="openManageOv()">🎒 인벤토리 / 합성</button>
       </div>
     </div>
   </div>
