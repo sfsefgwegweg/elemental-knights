@@ -649,6 +649,23 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   cursor:pointer;transition:all .12s;
 }
 .logout-btn:hover{border-color:#c04020;color:#e04020;}
+.nick-btn{
+  padding:1px 5px;border:1px solid #3a2a08;background:transparent;
+  color:#5a3818;font-family:'Courier New',monospace;font-size:8px;
+  cursor:pointer;transition:all .12s;
+}
+.nick-btn:hover{border-color:#c08030;color:#c08030;}
+/* 닉네임 설정 오버레이 */
+#nickname-ov{background:rgba(5,3,8,.97);backdrop-filter:blur(3px);z-index:260;}
+.nick-box{
+  background:#0d0904;border:2px solid #5a2a70;padding:28px 30px;width:340px;
+  box-shadow:0 0 40px rgba(140,60,200,.3);
+  display:flex;flex-direction:column;gap:14px;align-items:stretch;
+}
+.nick-title{text-align:center;font-size:18px;font-weight:bold;color:#d0a0f0;
+  letter-spacing:3px;}
+.nick-sub{text-align:center;font-size:10px;color:#5a3a70;letter-spacing:2px;}
+.nick-err{font-size:10px;color:#e04040;min-height:14px;text-align:center;}
 </style>
 </head>
 <body>
@@ -736,7 +753,8 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   <div id="stage-count" style="font-size:10px;color:#6a4820;padding:0 6px;"></div>
   <div class="ab-sep"></div>
   <div id="user-info">
-    <span id="user-email" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <span id="user-nickname" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c08030;"></span>
+    <button class="nick-btn" onclick="showNicknameOverlay(true)" title="닉네임 변경">✏️</button>
     <span id="save-indicator">✓ 저장됨</span>
     <button class="logout-btn" onclick="doLogout()">로그아웃</button>
   </div>
@@ -832,6 +850,19 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
 <!-- ═══════════════════════════════════════
      OVERLAYS
 ═══════════════════════════════════════ -->
+
+<!-- Nickname Setup -->
+<div id="nickname-ov" class="overlay">
+  <div class="nick-box slide-in">
+    <div style="font-size:36px;text-align:center;">🛡️</div>
+    <div class="nick-title">닉네임 설정</div>
+    <div class="nick-sub" id="nick-mode-sub">기사단에서 사용할 이름을 입력하세요</div>
+    <input class="auth-input" type="text" id="nick-input" placeholder="닉네임 (2~12자)"
+      maxlength="12" onkeydown="if(event.key==='Enter')confirmNickname()">
+    <div class="nick-err" id="nick-err"></div>
+    <button class="btn" onclick="confirmNickname()">✔ 확인</button>
+  </div>
+</div>
 
 <!-- Auth -->
 <div id="auth-ov" class="overlay active">
@@ -2646,13 +2677,69 @@ async function loadGame(){
 }
 
 // ════════════════════════════════════════════════
+//  닉네임
+// ════════════════════════════════════════════════
+let _nickname = '';
+
+async function loadNickname(){
+  if(!_currentUser) return '';
+  try{
+    const doc = await _db.collection('users').doc(_currentUser.uid).get();
+    if(doc.exists && doc.data().nickname){
+      _nickname = doc.data().nickname;
+    } else {
+      _nickname = '';
+    }
+  }catch(e){ _nickname = ''; }
+  return _nickname;
+}
+
+function showNicknameOverlay(isEdit=false){
+  const sub = document.getElementById('nick-mode-sub');
+  const input = document.getElementById('nick-input');
+  document.getElementById('nick-err').textContent = '';
+  if(isEdit){
+    sub.textContent = '새 닉네임을 입력하세요';
+    input.value = _nickname;
+  } else {
+    sub.textContent = '기사단에서 사용할 이름을 입력하세요';
+    input.value = '';
+  }
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('active'));
+  document.getElementById('nickname-ov').classList.add('active');
+  setTimeout(()=>input.focus(), 100);
+}
+
+async function confirmNickname(){
+  const input = document.getElementById('nick-input');
+  const errEl = document.getElementById('nick-err');
+  const name = input.value.trim();
+  if(name.length < 2 || name.length > 12){
+    errEl.textContent = '닉네임은 2~12자여야 합니다.'; return;
+  }
+  if(!/^[가-힣a-zA-Z0-9_]+$/.test(name)){
+    errEl.textContent = '한글, 영문, 숫자, _만 사용 가능합니다.'; return;
+  }
+  errEl.textContent = '';
+  try{
+    await _db.collection('users').doc(_currentUser.uid).set({ nickname: name }, { merge: true });
+    _nickname = name;
+    document.getElementById('user-nickname').textContent = name;
+    document.getElementById('nickname-ov').classList.remove('active');
+    showOverlay('title-ov');
+  }catch(e){
+    errEl.textContent = '저장 실패. 다시 시도하세요.';
+  }
+}
+
+// ════════════════════════════════════════════════
 //  랭킹
 // ════════════════════════════════════════════════
 async function updateRanking(wave){
   if(!_currentUser) return;
   try{
     await _db.collection('rankings').doc(_currentUser.uid).set({
-      displayName: _currentUser.displayName||_currentUser.email||'익명',
+      displayName: _nickname || _currentUser.displayName || _currentUser.email || '익명',
       bestWave: wave,
       uid: _currentUser.uid,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2724,11 +2811,8 @@ function finishStageClear(){
 _auth.onAuthStateChanged(async (user) => {
   _currentUser = user;
   if(user){
-    // 유저 정보 표시
-    document.getElementById('user-email').textContent =
-      user.displayName || user.email;
-
-    // 세이브 불러오기 (없으면 초기 아이템 지급)
+    // 닉네임 + 세이브 로드
+    await loadNickname();
     const loaded = await loadGame();
     if(!loaded){
       G.player.inventory = [iInst(ITEMS.iron_blade), iInst(ITEMS.leather_armor)];
@@ -2736,14 +2820,21 @@ _auth.onAuthStateChanged(async (user) => {
     }
     renderBottomUI();
 
-    // 로그인 화면 숨기고 타이틀 표시
+    document.getElementById('user-nickname').textContent = _nickname || user.email;
     document.getElementById('auth-ov').classList.remove('active');
-    showOverlay('title-ov');
+
+    // 닉네임 미설정 시 닉네임 오버레이, 아니면 타이틀
+    if(!_nickname){
+      showNicknameOverlay(false);
+    } else {
+      showOverlay('title-ov');
+    }
   } else {
     // 로그아웃 → 로그인 화면
+    _nickname = '';
     document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('active'));
     document.getElementById('auth-ov').classList.add('active');
-    document.getElementById('user-email').textContent = '';
+    document.getElementById('user-nickname').textContent = '';
   }
 });
 </script>
