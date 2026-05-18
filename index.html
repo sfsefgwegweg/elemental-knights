@@ -166,6 +166,12 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   cursor:pointer;transition:all .15s;letter-spacing:1px;
 }
 .ab-btn:hover{background:#4a2a08;border-color:#c08030;}
+.exit-btn{
+  padding:3px 10px;border:1px solid #5a2020;background:rgba(30,8,8,.8);
+  color:#c04040;font-family:'Courier New',monospace;font-size:10px;
+  cursor:pointer;transition:all .15s;letter-spacing:1px;white-space:nowrap;
+}
+.exit-btn:hover{background:#3a1010;border-color:#e04040;color:#e06060;}
 
 /* ═══════════════════════════════════════
    BOTTOM PANEL  820 × 291
@@ -749,6 +755,7 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   <div class="ab-label">🧪 물약:</div>
   <div id="potion-slots" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
   <div class="ab-spacer"></div>
+  <button id="exit-battle-btn" class="exit-btn" style="display:none;" onclick="exitBattle()">✕ 나가기</button>
   <div class="ab-sep"></div>
   <div id="stage-count" style="font-size:10px;color:#6a4820;padding:0 6px;"></div>
   <div class="ab-sep"></div>
@@ -1300,6 +1307,7 @@ function enterStage(idx){
   G.player.buffs=[];
   G.player.hp=Math.min(Math.floor(G.player.maxHp*.7+G.player.hp*.3),G.player.maxHp);
   document.getElementById('battle-log').innerHTML='';
+  document.getElementById('exit-battle-btn').style.display='';
   showOverlay(null); // Hide overlay, show battle
   initStarfield();
   setStageBackground(idx);
@@ -1502,6 +1510,7 @@ async function onPlayerDead(){
   sp.style.animation='deathAnim .8s ease forwards';
   screenShake();
   await sleep(1200);
+  document.getElementById('exit-battle-btn').style.display='none';
   showOverlay('gameover-ov');
 }
 
@@ -2267,6 +2276,7 @@ function enterEndlessStage(){
   G.player.buffs=[];
   G.player.hp=Math.min(Math.floor(G.player.maxHp*.7+G.player.hp*.3),G.player.maxHp);
   document.getElementById('battle-log').innerHTML='';
+  document.getElementById('exit-battle-btn').style.display='';
   showOverlay(null);
   initStarfield();
   setStageBackground(Math.floor(Math.random()*4));
@@ -2799,10 +2809,29 @@ function _showSaved(){
 
 // ── finishStageClear 에 저장 연결 ──
 function finishStageClear(){
+  document.getElementById('exit-battle-btn').style.display='none';
   showOverlay(null);
   renderWorld();
   setTimeout(()=>showOverlay('world-ov'), 300);
   saveGame();
+}
+
+function exitBattle(){
+  const b=G.battle;
+  if(!b) return;
+  b.over=true;
+  if(b.endless){
+    if(b.wave>G.endlessBest){G.endlessBest=b.wave;updateRanking(b.wave);}
+    addLog(`🚪 WAVE ${b.wave}에서 퇴각했습니다.`,'dmg');
+  } else {
+    addLog('🚪 스테이지에서 퇴각했습니다.','dmg');
+  }
+  G.phase='idle';
+  document.getElementById('exit-battle-btn').style.display='none';
+  saveGame();
+  showOverlay(null);
+  renderWorld();
+  setTimeout(()=>showOverlay('world-ov'),300);
 }
 
 // ════════════════════════════════════════════════
