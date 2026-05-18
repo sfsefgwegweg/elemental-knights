@@ -642,6 +642,12 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
 .rank-name{flex:1;color:#d0a050;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .rank-wave{color:#f0c060;font-weight:bold;letter-spacing:1px;}
 .rank-empty{text-align:center;color:#4a3010;font-size:11px;padding:20px;}
+.mi-row{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  border:1px solid #2a1806;background:#080602;font-size:12px;
+}
+.mi-label{color:#7a5a9a;min-width:80px;}
+.mi-val{flex:1;color:#e0c060;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 #save-indicator{
   font-size:9px;color:#50c050;opacity:0;transition:opacity .4s;
   letter-spacing:1px;
@@ -762,10 +768,8 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   <div id="stage-count" style="font-size:10px;color:#6a4820;padding:0 6px;"></div>
   <div class="ab-sep"></div>
   <div id="user-info">
-    <span id="user-nickname" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c08030;"></span>
-    <button class="nick-btn" onclick="showNicknameOverlay(true)" title="닉네임 변경">✏️</button>
+    <span id="user-nickname" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c08030;"></span>
     <span id="save-indicator">✓ 저장됨</span>
-    <button class="logout-btn" onclick="doLogout()">로그아웃</button>
   </div>
 </div>
 
@@ -911,6 +915,7 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
         클리어된 스테이지 순서로 진행 &nbsp;|&nbsp; 원소석: <span id="wo-stones"></span>
       </div>
       <div style="display:flex;gap:6px;">
+        <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="showMyInfo()">👤 내정보</button>
         <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="showRankings()">🏆 랭킹</button>
         <button class="btn" style="padding:5px 14px;font-size:11px;" onclick="openManageOv()">🎒 인벤토리 / 합성</button>
       </div>
@@ -1020,6 +1025,30 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
     <div id="rank-list"><div class="rank-empty">로딩 중...</div></div>
     <div style="text-align:center;font-size:10px;color:#4a3010;margin-top:4px;" id="rank-myinfo"></div>
     <button class="btn" style="padding:7px;font-size:11px;" onclick="closeRankings()">✕ 닫기</button>
+  </div>
+</div>
+
+<!-- My Info -->
+<div id="myinfo-ov" class="overlay">
+  <div class="rank-box slide-in" style="width:380px;border-color:#5a3a70;">
+    <div class="rank-title" style="color:#d0a0f0;">👤 내 정보</div>
+    <div class="mi-row">
+      <span class="mi-label">닉네임</span>
+      <span class="mi-val" id="mi-nick">-</span>
+      <button class="nick-btn" onclick="showNicknameOverlay(true)" title="닉네임 변경">✏️ 변경</button>
+    </div>
+    <div class="mi-row">
+      <span class="mi-label">계정</span>
+      <span class="mi-val" id="mi-email" style="font-size:10px;">-</span>
+    </div>
+    <div class="mi-row">
+      <span class="mi-label">무제한 최고</span>
+      <span class="mi-val" id="mi-best" style="color:#c090e0;">WAVE 0</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="btn" style="flex:1;padding:8px;font-size:11px;" onclick="closeMyInfo()">✕ 닫기</button>
+      <button class="btn btn-danger" style="flex:1;padding:8px;font-size:11px;" onclick="doLogout()">🚪 로그아웃</button>
+    </div>
   </div>
 </div>
 
@@ -2843,6 +2872,14 @@ async function showRankings(){
 }
 
 function closeRankings(){showOverlay('world-ov');renderWorld();}
+
+function showMyInfo(){
+  document.getElementById('mi-nick').textContent  = _nickname || '(미설정)';
+  document.getElementById('mi-email').textContent = _currentUser?.email || '(구글 계정)';
+  document.getElementById('mi-best').textContent  = `WAVE ${G.endlessBest||0}`;
+  showOverlay('myinfo-ov');
+}
+function closeMyInfo(){showOverlay('world-ov');renderWorld();}
 
 function _showSaved(){
   const el = document.getElementById('save-indicator');
