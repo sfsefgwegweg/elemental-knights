@@ -357,6 +357,8 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   box-shadow:0 0 12px rgba(200,140,40,.2);}
 .stage-card.locked{opacity:.35;cursor:not-allowed;}
 .stage-card.cleared{border-color:#406040;}
+.endless-card:hover{border-color:#a060d0!important;background:#0e0a14!important;
+  box-shadow:0 0 14px rgba(160,80,220,.25)!important;}
 .sc-emoji{font-size:28px;margin-bottom:5px;}
 .sc-name{font-size:13px;color:#e8c060;font-weight:bold;}
 .sc-el{font-size:11px;margin-top:3px;}
@@ -1115,6 +1117,7 @@ let G={
   synth:{left:null,right:null,leftIsStone:false},
   synthTarget:null,
   phase:'idle', // idle | battle | loot
+  endlessBest:0,
 };
 
 function pStats(){
@@ -1207,6 +1210,19 @@ function renderWorld(){
   const p=G.player;
   document.getElementById('wo-stones').textContent=
     `💧${p.stones.water} 🔥${p.stones.fire} 🌿${p.stones.grass}`;
+
+  // 무제한 스테이지 카드
+  const ec=document.createElement('div');
+  ec.className='stage-card slide-in endless-card';
+  ec.style.cssText='grid-column:1/-1;border-color:#5a3a70;';
+  ec.innerHTML=`
+    <div class="sc-emoji">♾️</div>
+    <div class="sc-name" style="color:#d0a0f0;">무제한 스테이지</div>
+    <div class="sc-el" style="color:#9060c0;">🎲 랜덤 몬스터 · 5웨이브마다 보스</div>
+    <div style="font-size:10px;color:#6a4a8a;margin-top:4px;">최고 기록: WAVE <b style="color:#c090e0">${G.endlessBest||0}</b></div>
+    <div class="sc-badge" style="color:#c080e0;">∞</div>`;
+  ec.onclick=()=>enterEndlessStage();
+  grid.appendChild(ec);
 }
 
 // ════════════════════════════════════════════════
@@ -1230,20 +1246,28 @@ function enterStage(idx){
 
 function startNextEnemy(){
   const b=G.battle;
-  if(b.qIdx>=b.queue.length){
-    // Stage clear
-    G.progress[b.stageIdx]=true;
-    G.phase='idle';
-    if(b.stageIdx>=3){
-      setTimeout(()=>showOverlay('victory-ov'),600);
-    } else {
-      setTimeout(()=>showStageClear(),700);
+
+  if(b.endless){
+    // 무제한 모드: 현재 웨이브 몬스터 생성
+    b.enemy=generateEndlessEnemy(b.wave);
+    b.over=false;b.running=false;
+    document.getElementById('i-stage').textContent=`♾️ WAVE ${b.wave}`;
+    document.getElementById('stage-count').textContent=b.wave%5===0?'👑 BOSS':'';
+  } else {
+    if(b.qIdx>=b.queue.length){
+      G.progress[b.stageIdx]=true;
+      G.phase='idle';
+      if(b.stageIdx>=3){
+        setTimeout(()=>showOverlay('victory-ov'),600);
+      } else {
+        setTimeout(()=>showStageClear(),700);
+      }
+      return;
     }
-    return;
+    const tmpl=b.queue[b.qIdx];
+    b.enemy={...tmpl,hp:tmpl.hp,maxHp:tmpl.hp};
+    b.over=false;b.running=false;
   }
-  const tmpl=b.queue[b.qIdx];
-  b.enemy={...tmpl,hp:tmpl.hp,maxHp:tmpl.hp};
-  b.over=false;b.running=false;
 
   // Animate enemy entrance
   const eSprite=document.getElementById('enemy-sprite');
@@ -1306,8 +1330,7 @@ async function autoBattleLoop(){
     await sleep(400);
   }
   b.running=false;
-  // 루프 종료 후 다음 적 시작 (onEnemyDead에서 호출 안 함)
-  if(!b.playerDead) startNextEnemy();
+  if(!b.playerDead && !b.endless) startNextEnemy();
 }
 
 function setTurn(txt,color){
@@ -1381,6 +1404,13 @@ async function onEnemyDead(){
   sp.style.animation='deathAnim .7s ease forwards';
   await sleep(900);sp.style.opacity='0';
 
+  if(b.endless){
+    if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();}
+    await sleep(300);
+    showWaveLoot(b.wave);
+    return;
+  }
+
   // 루트 누적 (스테이지 끝에 한번에 줌)
   const loot=pickLoot(b.enemy);
   const stoneEl=b.enemy.stoneDrop&&Math.random()<b.enemy.stoneCh?b.enemy.stoneDrop:null;
@@ -1396,7 +1426,12 @@ async function onEnemyDead(){
 
 async function onPlayerDead(){
   const b=G.battle;b.over=true;b.playerDead=true;
-  addLog('💀 쓰러졌습니다...','dmg');
+  if(b.endless){
+    addLog(`💀 WAVE ${b.wave}에서 쓰러졌습니다...`,'dmg');
+    if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();}
+  } else {
+    addLog('💀 쓰러졌습니다...','dmg');
+  }
   const sp=document.getElementById('player-sprite');
   sp.style.animation='deathAnim .8s ease forwards';
   screenShake();
@@ -2138,9 +2173,120 @@ function takeLoot(item){
   else p.inventory.push(item);
   afterLoot();
 }
-function skipLoot(){afterLoot();}
+function skipLoot(){
+  if(G.battle&&G.battle.endless) continueEndlessWave();
+  else afterLoot();
+}
 function afterLoot(){
   G.phase='battle';
+  showOverlay(null);
+  startNextEnemy();
+}
+
+// ════════════════════════════════════════════════
+//  무제한 스테이지
+// ════════════════════════════════════════════════
+function enterEndlessStage(){
+  G.battle={stageIdx:-1,endless:true,wave:1,queue:[],qIdx:0,
+    enemy:null,over:false,running:false,playerDead:false,
+    stageLoot:{items:[],stones:{}}};
+  G.phase='battle';
+  const stats=pStats();
+  G.player.maxHp=stats.hp;
+  G.player.buffs=[];
+  G.player.hp=Math.min(Math.floor(G.player.maxHp*.7+G.player.hp*.3),G.player.maxHp);
+  document.getElementById('battle-log').innerHTML='';
+  showOverlay(null);
+  initStarfield();
+  setStageBackground(Math.floor(Math.random()*4));
+  addLog('♾️ 무제한 스테이지 시작!','imp');
+  addLog(`최고 기록: WAVE ${G.endlessBest}  |  5웨이브마다 보스`,'');
+  startNextEnemy();
+}
+
+function generateEndlessEnemy(wave){
+  const isBoss=wave%5===0;
+  const pool=isBoss?ENEMIES.filter(e=>e.boss):ENEMIES.filter(e=>!e.boss);
+  const tmpl=pool[Math.floor(Math.random()*pool.length)];
+  const scale=1+wave*0.22;
+  const bMult=isBoss?2.2:1;
+  const hp=Math.floor(tmpl.hp*scale*bMult);
+  return{
+    ...tmpl,
+    name:wave>=10?`[강화] ${tmpl.name}`:tmpl.name,
+    hp,maxHp:hp,
+    attack:Math.floor(tmpl.attack*scale*(isBoss?1.5:1)),
+    defense:Math.floor(tmpl.defense*scale),
+    luck:Math.min(tmpl.luck+Math.floor(wave/3),45),
+    boss:isBoss,
+  };
+}
+
+function getEndlessLootPool(wave){
+  const all=Object.values(ITEMS).filter(i=>i.type!=='stone');
+  if(wave<=4) return all.filter(i=>
+    ['potion_hp','potion_atk','potion_def','potion_lck',
+     'wooden_sword','iron_blade','leather_armor','chain_mail',
+     'lucky_charm','power_ring'].includes(i.id));
+  if(wave<=9) return all.filter(i=>!['dark_blade','shadow_amulet'].includes(i.id));
+  return all;
+}
+
+function showWaveLoot(wave){
+  const isBoss=wave%5===0;
+  const pool=getEndlessLootPool(wave);
+  const choices=[...pool].sort(()=>Math.random()-.5)
+    .slice(0,isBoss?4:3).map(t=>iInst(t));
+
+  document.getElementById('loot-sub').textContent=
+    isBoss?`👑 BOSS WAVE ${wave} 클리어! 아이템을 하나 선택하세요.`
+          :`⚔️ WAVE ${wave} 클리어! 아이템을 하나 선택하세요.`;
+
+  const stoneEl=(isBoss||Math.random()<.3)?['water','fire','grass'][Math.floor(Math.random()*3)]:null;
+  if(stoneEl){
+    G.player.stones[stoneEl]++;
+    document.getElementById('stone-reward').textContent=
+      `🪨 ${ELEM[stoneEl].emoji} ${ELEM[stoneEl].name} 원소석 +1!`;
+  } else {
+    document.getElementById('stone-reward').textContent='';
+  }
+
+  const cardsRow=document.getElementById('loot-cards');
+  cardsRow.innerHTML='';
+  choices.forEach(item=>{
+    const c=document.createElement('div');c.className='loot-card slide-in';
+    c.innerHTML=`<div class="lc-emoji">${itemIconHtml(item,'44px')}</div>
+      <div class="lc-name">${item.name}</div>
+      <div class="lc-stats">${shortStatStr(item)||'-'}</div>
+      <div class="lc-el ${ELEM[item.element].cls}">${ELEM[item.element].emoji} ${ELEM[item.element].name}</div>`;
+    c.onclick=()=>{
+      if(c.classList.contains('taken'))return;
+      if(item.type==='potion'){
+        if(G.player.potions.length>=4){addLog('물약 가득!','');return;}
+        G.player.potions.push(item);
+      } else {
+        G.player.inventory.push(item);
+      }
+      c.classList.add('taken');
+      renderBottomUI();
+      setTimeout(()=>continueEndlessWave(),500);
+    };
+    cardsRow.appendChild(c);
+  });
+
+  showOverlay('loot-ov');
+}
+
+function continueEndlessWave(){
+  const b=G.battle;
+  b.wave++;
+  b.over=false;b.running=false;b.playerDead=false;
+  const heal=Math.floor((G.player.maxHp-G.player.hp)*.2);
+  if(heal>0){
+    G.player.hp=Math.min(G.player.maxHp,G.player.hp+heal);
+    addLog(`💚 HP +${heal} 회복`,'heal');
+  }
+  renderBottomUI();
   showOverlay(null);
   startNextEnemy();
 }
@@ -2406,6 +2552,7 @@ async function saveGame(){
     potions:   p.potions.map(_serItem),
     stones:    { ...p.stones },
     progress:  [...G.progress],
+    endlessBest: G.endlessBest||0,
     savedAt:   firebase.firestore.FieldValue.serverTimestamp(),
   };
   try {
@@ -2433,7 +2580,8 @@ async function loadGame(){
     p.inventory = (d.inventory||[]).map(_deserItem).filter(Boolean);
     p.potions   = (d.potions  ||[]).map(_deserItem).filter(Boolean);
     p.stones    = d.stones   ?? {water:0,fire:0,grass:0};
-    G.progress  = d.progress ?? [false,false,false,false];
+    G.progress    = d.progress    ?? [false,false,false,false];
+  G.endlessBest = d.endlessBest ?? 0;
     return true;
   } catch(e){ console.error('불러오기 실패:', e); return false; }
 }
