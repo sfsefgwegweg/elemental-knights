@@ -1065,7 +1065,7 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
   <div class="end-icon">🏆</div>
   <div class="end-title" style="color:#f0c060;">VICTORY!</div>
   <div class="end-sub">모든 어둠을 물리쳤습니다!</div>
-  <button class="btn btn-green" onclick="resetGame()">↺  다시 플레이</button>
+  <button class="btn btn-green" onclick="returnToTown()">🏠  마을로 돌아가기</button>
 </div>
 
 <!-- Item Context Menu -->
@@ -1406,10 +1406,9 @@ function startNextEnemy(){
       G.progress[b.stageIdx]=true;
       G.phase='idle';
       if(b.stageIdx>=3){
-        setTimeout(()=>showOverlay('victory-ov'),600);
-      } else {
-        setTimeout(()=>showStageClear(),700);
+        addLog('🏆 모든 어둠을 물리쳤습니다! 무제한 스테이지가 열렸습니다!','imp');
       }
+      setTimeout(()=>showStageClear(),700);
       return;
     }
     const tmpl=b.queue[b.qIdx];
