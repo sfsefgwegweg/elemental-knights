@@ -2,11 +2,30 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>원소 기사단</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:manipulation;}
 body{background:#050308;display:flex;justify-content:center;align-items:center;
-  min-height:100vh;font-family:'Courier New',monospace;color:#f0d080;overflow:hidden;}
+  min-height:100vh;font-family:'Courier New',monospace;color:#f0d080;}
+button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
+/* 핸드폰 세로 모드 안내 */
+#rotate-hint{
+  display:none;position:fixed;inset:0;z-index:9999;background:#050308;
+  color:#f0c060;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:30px;font-family:'Courier New',monospace;letter-spacing:2px;
+}
+#rotate-hint .ic{font-size:64px;animation:rh 1.6s ease-in-out infinite;}
+#rotate-hint .t{font-size:18px;margin-top:18px;color:#f0c060;}
+#rotate-hint .s{font-size:12px;margin-top:8px;color:#7a5a30;}
+@keyframes rh{0%,100%{transform:rotate(0)}50%{transform:rotate(-90deg)}}
+@media (orientation:portrait) and (max-width:850px){
+  #rotate-hint{display:flex;}
+  #game{visibility:hidden;}
+}
 
 /* ═══════════════════════════════════════
    GAME FRAME  820 × 620
@@ -683,6 +702,11 @@ body{background:#050308;display:flex;justify-content:center;align-items:center;
 </style>
 </head>
 <body>
+<div id="rotate-hint">
+  <div class="ic">📱</div>
+  <div class="t">화면을 가로로 돌려주세요</div>
+  <div class="s">PLEASE ROTATE YOUR DEVICE</div>
+</div>
 <div id="game">
 
 <!-- ═══════ TOP PANEL ═══════ -->
@@ -3005,6 +3029,32 @@ _auth.onAuthStateChanged(async (user) => {
     document.getElementById('user-nickname').textContent = '';
   }
 });
+
+// ════════════════════════════════════════════════
+//  화면 크기에 맞춰 게임 자동 스케일 (모바일/작은 창 대응)
+// ════════════════════════════════════════════════
+function fitGameToViewport(){
+  const game=document.getElementById('game');
+  if(!game) return;
+  const W=window.innerWidth, H=window.innerHeight;
+  const GW=820, GH=620;
+  // 세로 모드 모바일은 rotate-hint가 표시되므로 스케일 건너뜀
+  if(H>W && W<850){ game.style.transform=''; return; }
+  if(W>=GW+20 && H>=GH+20){
+    game.style.transform=''; game.style.position=''; game.style.top=''; game.style.left='';
+    return;
+  }
+  const scale=Math.min(W/GW, H/GH)*0.98;
+  game.style.position='absolute';
+  game.style.top='50%';
+  game.style.left='50%';
+  game.style.transformOrigin='center center';
+  game.style.transform=`translate(-50%,-50%) scale(${scale})`;
+}
+window.addEventListener('resize', fitGameToViewport);
+window.addEventListener('orientationchange', ()=>setTimeout(fitGameToViewport,150));
+window.addEventListener('load', fitGameToViewport);
+fitGameToViewport();
 </script>
 </body>
 </html>
