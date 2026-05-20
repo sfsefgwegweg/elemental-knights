@@ -1395,6 +1395,7 @@ function enterStage(idx){
 
 function startNextEnemy(){
   const b=G.battle;
+  if(!b||b.exited) return;
 
   if(b.endless){
     b.enemy=b.queue[b.qIdx];
@@ -1477,6 +1478,7 @@ async function autoBattleLoop(){
     await sleep(400);
   }
   b.running=false;
+  if(b.exited) return;
   if(!b.playerDead && !b.endless) startNextEnemy();
 }
 
@@ -1552,9 +1554,10 @@ async function onEnemyDead(){
   await sleep(900);sp.style.opacity='0';
 
   if(b.endless){
+    if(b.exited) return;
     b.qIdx++;
     if(b.qIdx<b.queue.length){
-      setTimeout(()=>startNextEnemy(),400);
+      setTimeout(()=>{ if(!G.battle?.exited) startNextEnemy(); },400);
       return;
     }
     if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();updateRanking(b.wave);}
@@ -2400,16 +2403,20 @@ function generateEndlessEnemy(wave,isBoss,tmpl){
     const pool=isBoss?ENEMIES.filter(e=>e.boss):ENEMIES.filter(e=>!e.boss);
     tmpl=pool[Math.floor(Math.random()*pool.length)];
   }
+  // 어떤 템플릿이 뽑히든 같은 웨이브는 동일한 강함이 되도록 스탯을 통일
   const scale=1+wave*0.01;
-  const bMult=isBoss?2.2:1;
-  const hp=Math.floor(tmpl.hp*scale*bMult);
+  const baseHp   = isBoss?170:70;
+  const baseAtk  = isBoss?22:14;
+  const baseDef  = isBoss?8:4;
+  const baseLuck = isBoss?15:10;
+  const hp=Math.floor(baseHp*scale);
   return{
     ...tmpl,
     name:wave>=50?`[강화] ${tmpl.name}`:tmpl.name,
     hp,maxHp:hp,
-    attack:Math.floor(tmpl.attack*scale*(isBoss?1.5:1)),
-    defense:Math.floor(tmpl.defense*scale),
-    luck:Math.min(tmpl.luck+Math.floor(wave/10),45),
+    attack:Math.floor(baseAtk*scale),
+    defense:Math.floor(baseDef*scale),
+    luck:Math.min(baseLuck+Math.floor(wave/10),45),
     boss:!!isBoss,
   };
 }
@@ -2943,7 +2950,10 @@ function finishStageClear(){
 function exitBattle(){
   const b=G.battle;
   if(!b) return;
+  // 모든 전투 진행 경로를 막는다
+  b.exited=true;
   b.over=true;
+  b.running=false;
   if(b.endless){
     if(b.wave>G.endlessBest){G.endlessBest=b.wave;updateRanking(b.wave);}
     addLog(`🚪 WAVE ${b.wave}에서 퇴각했습니다.`,'dmg');
@@ -2951,11 +2961,16 @@ function exitBattle(){
     addLog('🚪 스테이지에서 퇴각했습니다.','dmg');
   }
   G.phase='idle';
+  G.player.buffs=[];
+  // 체력 회복 (퇴각 페널티 없이 마을 복귀)
+  const st=pStats();
+  G.player.maxHp=st.hp;
+  G.player.hp=G.player.maxHp;
   document.getElementById('exit-battle-btn').style.display='none';
   saveGame();
-  showOverlay(null);
+  showOverlay('world-ov');
   renderWorld();
-  setTimeout(()=>showOverlay('world-ov'),300);
+  renderBottomUI();
 }
 
 // ════════════════════════════════════════════════
