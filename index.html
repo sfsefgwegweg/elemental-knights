@@ -1242,6 +1242,7 @@ let G={
   synthTarget:null,
   phase:'idle', // idle | battle | loot
   endlessBest:0,
+  endlessCheckpoint:0, // 다음 도전 시작 가능 웨이브 (10웨이브 보스 클리어 시 +1 갱신)
 };
 
 function pStats(){
@@ -1380,13 +1381,20 @@ function renderWorld(){
   ec.className='stage-card slide-in endless-card'+(endlessUnlocked?'':' locked');
   ec.style.cssText='grid-column:1/-1;border-color:#5a3a70;';
   if(endlessUnlocked){
+    const cp=G.endlessCheckpoint||0;
+    const cpBtn = cp>1 ? `<button class="btn" style="padding:5px 12px;font-size:11px;background:#2a1a4a;border-color:#7050a0;color:#d0a0f0;" onclick="event.stopPropagation();enterEndlessStage(${cp})">⚡ WAVE ${cp}부터</button>` : '';
     ec.innerHTML=`
       <div class="sc-emoji">♾️</div>
       <div class="sc-name" style="color:#d0a0f0;">무제한 스테이지</div>
-      <div class="sc-el" style="color:#9060c0;">🎲 랜덤 몬스터 · 5웨이브마다 보스</div>
-      <div style="font-size:10px;color:#6a4a8a;margin-top:4px;">최고 기록: WAVE <b style="color:#c090e0">${G.endlessBest||0}</b></div>
+      <div class="sc-el" style="color:#9060c0;">🎲 랜덤 몬스터 · 5웨이브마다 보스 · 10웨이브 체크포인트</div>
+      <div style="font-size:10px;color:#6a4a8a;margin-top:4px;">최고 기록: WAVE <b style="color:#c090e0">${G.endlessBest||0}</b>${cp>1?` &nbsp;|&nbsp; 체크포인트: WAVE <b style="color:#c090e0">${cp}</b>`:''}</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn" style="padding:5px 12px;font-size:11px;" onclick="event.stopPropagation();enterEndlessStage(1)">▶ 처음부터</button>
+        ${cpBtn}
+      </div>
       <div class="sc-badge" style="color:#c080e0;">∞</div>`;
-    ec.onclick=()=>enterEndlessStage();
+    // 기본 카드 클릭: 체크포인트 있으면 거기서, 없으면 1웨이브
+    ec.onclick=()=>enterEndlessStage(cp>1?cp:1);
   } else {
     ec.innerHTML=`
       <div class="sc-emoji">🔒</div>
@@ -1584,7 +1592,13 @@ async function onEnemyDead(){
       setTimeout(()=>{ if(!G.battle?.exited) startNextEnemy(); },400);
       return;
     }
-    if(b.wave>G.endlessBest){G.endlessBest=b.wave;saveGame();updateRanking(b.wave);}
+    let changed=false;
+    if(b.wave>G.endlessBest){G.endlessBest=b.wave;updateRanking(b.wave);changed=true;}
+    if(b.wave%10===0 && (b.wave+1)>G.endlessCheckpoint){
+      G.endlessCheckpoint=b.wave+1; changed=true;
+      addLog(`💾 체크포인트! 다음엔 WAVE ${b.wave+1}부터 시작 가능`,'el');
+    }
+    if(changed) saveGame();
     await sleep(300);
     showWaveLoot(b.wave);
     return;
@@ -2375,8 +2389,9 @@ function afterLoot(){
 // ════════════════════════════════════════════════
 //  무제한 스테이지
 // ════════════════════════════════════════════════
-function enterEndlessStage(){
-  G.battle={stageIdx:-1,endless:true,wave:1,queue:generateWaveQueue(1),qIdx:0,
+function enterEndlessStage(startWave=1){
+  const w=Math.max(1, startWave|0);
+  G.battle={stageIdx:-1,endless:true,wave:w,queue:generateWaveQueue(w),qIdx:0,
     enemy:null,over:false,running:false,playerDead:false,
     stageLoot:{items:[],stones:{}}};
   G.phase='battle';
@@ -2389,8 +2404,8 @@ function enterEndlessStage(){
   showOverlay(null);
   initStarfield();
   setStageBackground(Math.floor(Math.random()*4));
-  addLog('♾️ 무제한 스테이지 시작!','imp');
-  addLog(`최고 기록: WAVE ${G.endlessBest}  |  5웨이브마다 보스`,'');
+  addLog(`♾️ 무제한 스테이지 시작! (WAVE ${w}부터)`,'imp');
+  addLog(`최고 기록: WAVE ${G.endlessBest}  |  5웨이브마다 보스 · 10웨이브마다 체크포인트`,'');
   startNextEnemy();
 }
 
@@ -2428,7 +2443,7 @@ function generateEndlessEnemy(wave,isBoss,tmpl){
     tmpl=pool[Math.floor(Math.random()*pool.length)];
   }
   // 어떤 템플릿이 뽑히든 같은 웨이브는 동일한 강함이 되도록 스탯을 통일
-  const scale=1+wave*0.01;
+  const scale=1+wave*0.03; // 웨이브당 +3%
   const baseHp   = isBoss?170:70;
   const baseAtk  = isBoss?22:14;
   const baseDef  = isBoss?8:4;
@@ -2794,6 +2809,7 @@ async function saveGame(){
     stones:    { ...p.stones },
     progress:  [...G.progress],
     endlessBest: G.endlessBest||0,
+    endlessCheckpoint: G.endlessCheckpoint||0,
     savedAt:   firebase.firestore.FieldValue.serverTimestamp(),
   };
   try {
@@ -2823,6 +2839,7 @@ async function loadGame(){
     p.stones    = d.stones   ?? {water:0,fire:0,grass:0};
     G.progress    = d.progress    ?? [false,false,false,false];
   G.endlessBest = d.endlessBest ?? 0;
+  G.endlessCheckpoint = d.endlessCheckpoint ?? 0;
     return true;
   } catch(e){ console.error('불러오기 실패:', e); return false; }
 }
