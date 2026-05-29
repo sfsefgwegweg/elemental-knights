@@ -2979,6 +2979,8 @@ async function confirmNickname(){
     await _db.collection('users').doc(_currentUser.uid).set({ nickname: name }, { merge: true });
     _nickname = name;
     document.getElementById('user-nickname').textContent = name;
+    // 랭킹에 표시된 닉네임도 즉시 동기화 (베스트 웨이브는 유지)
+    if(G.endlessBest>0) updateRanking(G.endlessBest);
     document.getElementById('nickname-ov').classList.remove('active');
     showOverlay('title-ov');
   }catch(e){
@@ -2989,14 +2991,22 @@ async function confirmNickname(){
 // ════════════════════════════════════════════════
 //  랭킹
 // ════════════════════════════════════════════════
+// 항상 최고 기록만 유지. 더 낮은 값으로 덮어쓰지 않음.
 async function updateRanking(wave){
   if(!_currentUser) return;
+  const name = _nickname || _currentUser.displayName || _currentUser.email || '익명';
+  const ref = _db.collection('rankings').doc(_currentUser.uid);
   try{
-    await _db.collection('rankings').doc(_currentUser.uid).set({
-      displayName: _nickname || _currentUser.displayName || _currentUser.email || '익명',
-      bestWave: wave,
-      uid: _currentUser.uid,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    await _db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      const stored = snap.exists ? (snap.data().bestWave||0) : 0;
+      const finalWave = Math.max(stored, wave|0, G.endlessBest|0);
+      tx.set(ref, {
+        displayName: name,
+        bestWave: finalWave,
+        uid: _currentUser.uid,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
     });
   }catch(e){console.error('랭킹 업데이트 실패:',e);}
 }
