@@ -1179,18 +1179,18 @@ const ENEMIES=[
   {id:'lava_golem',name:'용암 골렘',emoji:'🌋',img:'images/lava_golem.png',element:'fire',hp:300,attack:34,defense:20,luck:7,stage:2,boss:true,
    loot:['fire_sword','flame_ward','power_ring'],stoneDrop:'fire',stoneCh:.9,special:'용암 폭발'},
   // ── STAGE 3 ──
-  {id:'sea_sprite',name:'바다 정령',emoji:'🌊',img:'images/sea_sprite.png',element:'water',hp:200,attack:44,defense:22,luck:12,stage:3,boss:false,
+  {id:'sea_sprite',name:'바다 정령',emoji:'🌊',img:'images/sea_sprite.png',element:'water',hp:480,attack:62,defense:30,luck:14,stage:3,boss:false,
    loot:['ice_lance','aqua_shield','potion_def'],stoneDrop:'water',stoneCh:.35},
-  {id:'coral_guardian',name:'산호 수호자',emoji:'🐚',img:'images/coral_guardian.png',element:'water',hp:260,attack:40,defense:35,luck:8,stage:3,boss:false,
+  {id:'coral_guardian',name:'산호 수호자',emoji:'🐚',img:'images/coral_guardian.png',element:'water',hp:620,attack:55,defense:48,luck:10,stage:3,boss:false,
    loot:['aqua_shield','vital_pendant','potion_hp'],stoneDrop:'water',stoneCh:.4},
-  {id:'tide_dragon',name:'조류 용',emoji:'🐉',img:'images/tide_dragon.png',element:'water',hp:600,attack:56,defense:38,luck:14,stage:3,boss:true,
+  {id:'tide_dragon',name:'조류 용',emoji:'🐉',img:'images/tide_dragon.png',element:'water',hp:1600,attack:84,defense:52,luck:18,stage:3,boss:true,
    loot:['ice_lance','aqua_shield','shadow_amulet'],stoneDrop:'water',stoneCh:.9,special:'파도 충격'},
   // ── STAGE 4 ──
-  {id:'shadow_knight',name:'암흑 기사',emoji:'🧟',img:'images/shadow_knight.png',element:'normal',hp:420,attack:72,defense:54,luck:10,stage:4,boss:false,
+  {id:'shadow_knight',name:'암흑 기사',emoji:'🧟',img:'images/shadow_knight.png',element:'normal',hp:1000,attack:110,defense:75,luck:14,stage:4,boss:false,
    loot:['dark_blade','chain_mail','guardian_amulet'],stoneDrop:null,stoneCh:0},
-  {id:'void_witch',name:'공허 마녀',emoji:'🧙‍♀️',img:'images/void_witch.png',element:'normal',hp:380,attack:82,defense:36,luck:38,stage:4,boss:false,
+  {id:'void_witch',name:'공허 마녀',emoji:'🧙‍♀️',img:'images/void_witch.png',element:'normal',hp:880,attack:130,defense:50,luck:42,stage:4,boss:false,
    loot:['dark_blade','lucky_charm','shadow_amulet'],stoneDrop:null,stoneCh:0},
-  {id:'dark_lord',name:'암흑 군주',emoji:'💀',img:'images/dark_lord.png',element:'normal',hp:1000,attack:95,defense:65,luck:25,stage:4,boss:true,
+  {id:'dark_lord',name:'암흑 군주',emoji:'💀',img:'images/dark_lord.png',element:'normal',hp:2800,attack:160,defense:95,luck:30,stage:4,boss:true,
    loot:['dark_blade','shadow_amulet','vital_pendant'],stoneDrop:null,stoneCh:0,special:'어둠의 폭풍'},
 ];
 
@@ -1467,7 +1467,7 @@ function startNextEnemy(){
     addLog(`👑 보스 등장! ${b.enemy.name}`,'imp');
   }
   addLog(`⚔️ ${b.enemy.name} 등장!`,'imp');
-  setTimeout(()=>autoBattleLoop(),b.enemy.boss?2200:700);
+  setTimeout(()=>autoBattleLoop(),b.enemy.boss?1500:350);
 }
 
 // ─── AUTO BATTLE LOOP ───
@@ -1477,19 +1477,19 @@ async function autoBattleLoop(){
   b.running=true;
   while(!b.over){
     setTurn('⚔️ 공격 중','#60d060');
-    await sleep(600);
+    await sleep(280);
     if(b.over) break;
     await doPlayerAttack();
     if(b.over) break;
-    await sleep(600);
+    await sleep(280);
     setTurn('💢 적 공격','#e05050');
-    await sleep(600);
+    await sleep(260);
     if(b.over) break;
     await doEnemyAttack();
     if(b.over) break;
     tickBuffs();
     updateAllUI();
-    await sleep(400);
+    await sleep(180);
   }
   b.running=false;
   if(b.exited) return;
@@ -1785,7 +1785,10 @@ function spawnDmgNum(val,isCrit,side){
 }
 
 function screenShake(){
-  const g=document.getElementById('game');
+  // #game에 흔들기를 걸면 모바일 fit transform(scale/rotate)을 덮어써서 화면이 튀어나옴.
+  // arena-section만 흔들도록 변경.
+  const g=document.getElementById('arena-section') || document.getElementById('top-panel');
+  if(!g) return;
   g.style.animation='none';void g.offsetWidth;
   g.style.animation='screenShake .38s ease';
   setTimeout(()=>g.style.animation='',420);
@@ -2424,12 +2427,13 @@ function generateEndlessEnemy(wave,isBoss,tmpl){
     const pool=isBoss?ENEMIES.filter(e=>e.boss):ENEMIES.filter(e=>!e.boss);
     tmpl=pool[Math.floor(Math.random()*pool.length)];
   }
-  // 어떤 템플릿이 뽑히든 같은 웨이브는 동일한 강함이 되도록 스탯을 통일
-  const scale=1+wave*0.03; // 웨이브당 +3%
-  const baseHp   = isBoss?170:70;
-  const baseAtk  = isBoss?22:14;
-  const baseDef  = isBoss?8:4;
-  const baseLuck = isBoss?15:10;
+  // 어떤 템플릿이 뽑히든 같은 웨이브는 동일한 강함이 되도록 스탯 통일
+  // 가속 곡선: 초반은 부드럽고 후반엔 가파르게
+  const scale = 1 + wave*0.05 + Math.pow(wave/12, 1.7);
+  const baseHp   = isBoss?420:180;
+  const baseAtk  = isBoss?40:26;
+  const baseDef  = isBoss?14:8;
+  const baseLuck = isBoss?18:12;
   const hp=Math.floor(baseHp*scale);
   return{
     ...tmpl,
@@ -2473,24 +2477,29 @@ function showWaveLoot(wave){
 
   const cardsRow=document.getElementById('loot-cards');
   cardsRow.innerHTML='';
+  let resolved=false;
+  const pickItem=(item,c)=>{
+    if(resolved) return;
+    if(item.type==='potion' && G.player.potions.length>=4){ addLog('물약 가득! 다른 걸 골라주세요.',''); return; }
+    resolved=true;
+    if(item.type==='potion') G.player.potions.push(item);
+    else G.player.inventory.push(item);
+    c.classList.add('taken');
+    // 나머지 카드도 잠금
+    cardsRow.querySelectorAll('.loot-card').forEach(x=>{ if(x!==c) x.classList.add('taken'); });
+    renderBottomUI();
+    setTimeout(()=>continueEndlessWave(),500);
+  };
   choices.forEach(item=>{
     const c=document.createElement('div');c.className='loot-card slide-in';
     c.innerHTML=`<div class="lc-emoji">${itemIconHtml(item,'44px')}</div>
       <div class="lc-name">${item.name}</div>
       <div class="lc-stats">${shortStatStr(item)||'-'}</div>
       <div class="lc-el ${ELEM[item.element].cls}">${ELEM[item.element].emoji} ${ELEM[item.element].name}</div>`;
-    c.onclick=()=>{
-      if(c.classList.contains('taken'))return;
-      if(item.type==='potion'){
-        if(G.player.potions.length>=4){addLog('물약 가득!','');return;}
-        G.player.potions.push(item);
-      } else {
-        G.player.inventory.push(item);
-      }
-      c.classList.add('taken');
-      renderBottomUI();
-      setTimeout(()=>continueEndlessWave(),500);
-    };
+    // click + touchend 둘 다 받아 모바일 응답성 강화
+    const handler=(ev)=>{ ev.preventDefault?.(); pickItem(item,c); };
+    c.addEventListener('click', handler);
+    c.addEventListener('touchend', handler, {passive:false});
     cardsRow.appendChild(c);
   });
 
