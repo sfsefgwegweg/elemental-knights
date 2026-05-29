@@ -1185,27 +1185,27 @@ const ENEMIES=[
   {id:'elder_treant',name:'고목 트리언트',emoji:'🌲',img:'images/elder_treant.png',element:'grass',hp:200,attack:22,defense:14,luck:6,stage:1,boss:true,
    loot:['vine_whip','bark_armor','lucky_charm'],stoneDrop:'grass',stoneCh:.9,special:'덩굴 속박'},
   // ── STAGE 2 ──
-  {id:'fire_imp',name:'화염 임프',emoji:'👿',img:'images/fire_imp.png',element:'fire',hp:138,attack:20,defense:9,luck:10,stage:2,boss:false,
+  {id:'fire_imp',name:'화염 임프',emoji:'👿',img:'images/fire_imp.png',element:'fire',hp:138,attack:24,defense:9,luck:10,stage:2,boss:false,
    loot:['fire_sword','potion_atk','chain_mail'],stoneDrop:'fire',stoneCh:.3},
-  {id:'magma_toad',name:'용암 두꺼비',emoji:'🐸',img:'images/magma_toad.png',element:'fire',hp:160,attack:24,defense:12,luck:6,stage:2,boss:false,
+  {id:'magma_toad',name:'용암 두꺼비',emoji:'🐸',img:'images/magma_toad.png',element:'fire',hp:160,attack:28,defense:12,luck:6,stage:2,boss:false,
    loot:['flame_ward','potion_hp','power_ring'],stoneDrop:'fire',stoneCh:.35},
-  {id:'flame_serpent',name:'불꽃 뱀',emoji:'🐍',img:'images/flame_serpent.png',element:'fire',hp:150,attack:27,defense:9,luck:14,stage:2,boss:false,
+  {id:'flame_serpent',name:'불꽃 뱀',emoji:'🐍',img:'images/flame_serpent.png',element:'fire',hp:150,attack:32,defense:9,luck:14,stage:2,boss:false,
    loot:['fire_sword','lucky_charm','potion_lck'],stoneDrop:'fire',stoneCh:.4},
-  {id:'lava_golem',name:'용암 골렘',emoji:'🌋',img:'images/lava_golem.png',element:'fire',hp:400,attack:34,defense:20,luck:7,stage:2,boss:true,
+  {id:'lava_golem',name:'용암 골렘',emoji:'🌋',img:'images/lava_golem.png',element:'fire',hp:400,attack:42,defense:20,luck:7,stage:2,boss:true,
    loot:['fire_sword','flame_ward','power_ring'],stoneDrop:'fire',stoneCh:.9,special:'용암 폭발'},
   // ── STAGE 3 ──
-  {id:'sea_sprite',name:'바다 정령',emoji:'🌊',img:'images/sea_sprite.png',element:'water',hp:480,attack:62,defense:30,luck:14,stage:3,boss:false,
+  {id:'sea_sprite',name:'바다 정령',emoji:'🌊',img:'images/sea_sprite.png',element:'water',hp:480,attack:75,defense:30,luck:14,stage:3,boss:false,
    loot:['ice_lance','aqua_shield','potion_def'],stoneDrop:'water',stoneCh:.35},
-  {id:'coral_guardian',name:'산호 수호자',emoji:'🐚',img:'images/coral_guardian.png',element:'water',hp:620,attack:55,defense:48,luck:10,stage:3,boss:false,
+  {id:'coral_guardian',name:'산호 수호자',emoji:'🐚',img:'images/coral_guardian.png',element:'water',hp:620,attack:68,defense:48,luck:10,stage:3,boss:false,
    loot:['aqua_shield','vital_pendant','potion_hp'],stoneDrop:'water',stoneCh:.4},
-  {id:'tide_dragon',name:'조류 용',emoji:'🐉',img:'images/tide_dragon.png',element:'water',hp:1600,attack:84,defense:52,luck:18,stage:3,boss:true,
+  {id:'tide_dragon',name:'조류 용',emoji:'🐉',img:'images/tide_dragon.png',element:'water',hp:1600,attack:105,defense:52,luck:18,stage:3,boss:true,
    loot:['ice_lance','aqua_shield','shadow_amulet'],stoneDrop:'water',stoneCh:.9,special:'파도 충격'},
   // ── STAGE 4 ──
-  {id:'shadow_knight',name:'암흑 기사',emoji:'🧟',img:'images/shadow_knight.png',element:'normal',hp:1000,attack:110,defense:75,luck:14,stage:4,boss:false,
+  {id:'shadow_knight',name:'암흑 기사',emoji:'🧟',img:'images/shadow_knight.png',element:'normal',hp:1000,attack:130,defense:75,luck:14,stage:4,boss:false,
    loot:['dark_blade','chain_mail','guardian_amulet'],stoneDrop:null,stoneCh:0},
-  {id:'void_witch',name:'공허 마녀',emoji:'🧙‍♀️',img:'images/void_witch.png',element:'normal',hp:880,attack:130,defense:50,luck:42,stage:4,boss:false,
+  {id:'void_witch',name:'공허 마녀',emoji:'🧙‍♀️',img:'images/void_witch.png',element:'normal',hp:880,attack:155,defense:50,luck:42,stage:4,boss:false,
    loot:['dark_blade','lucky_charm','shadow_amulet'],stoneDrop:null,stoneCh:0},
-  {id:'dark_lord',name:'암흑 군주',emoji:'💀',img:'images/dark_lord.png',element:'normal',hp:2800,attack:160,defense:95,luck:30,stage:4,boss:true,
+  {id:'dark_lord',name:'암흑 군주',emoji:'💀',img:'images/dark_lord.png',element:'normal',hp:2800,attack:195,defense:95,luck:30,stage:4,boss:true,
    loot:['dark_blade','shadow_amulet','vital_pendant'],stoneDrop:null,stoneCh:0,special:'어둠의 폭풍'},
 ];
 
@@ -1652,12 +1652,11 @@ async function animPlayerAttack(isCrit,el){
   const swordSrc=hasWeapon ? weapon.img : 'images/무기 없을 때 기본 이펙트.png';
   const enemyWrap=document.getElementById('enemy-char');
   const layer=document.getElementById('particle-layer');
-  const ar=document.getElementById('arena-section').getBoundingClientRect();
-  const er=enemyWrap.getBoundingClientRect();
-
-  // 적 중심 좌표 (arena 기준)
-  const cx = er.left + er.width/2  - ar.left - 50; // 칼 너비(100) 절반 보정
-  const cy = er.top  + er.height/2 - ar.top  - 20; // 칼 높이(130) 절반 보정
+  // offsetLeft/Top 기준 (모바일 fit transform/회전 영향 없음)
+  const exMid = enemyWrap.offsetLeft + enemyWrap.offsetWidth/2;
+  const eyMid = enemyWrap.offsetTop  + enemyWrap.offsetHeight/2;
+  const cx = exMid - 50; // 칼 너비(100) 절반 보정
+  const cy = eyMid - 20; // 칼 높이(130) 일부 보정
 
   // 래퍼: 위치 + 낙하 애니메이션 담당
   const swordWrap=document.createElement('div');
@@ -1693,8 +1692,8 @@ async function animPlayerAttack(isCrit,el){
 
     // 충격파 원 (적 발밑에)
     const impact=document.createElement('div');
-    const ix = er.left + er.width/2 - ar.left;
-    const iy = er.bottom - ar.top - 10;
+    const ix = enemyWrap.offsetLeft + enemyWrap.offsetWidth/2;
+    const iy = enemyWrap.offsetTop + enemyWrap.offsetHeight - 10;
     impact.style.cssText=`
       position:absolute; left:${ix}px; top:${iy}px;
       width:80px; height:24px; border-radius:50%;
@@ -1742,9 +1741,7 @@ function animHitPlayer(mult,defEl){
 function spawnElementAura(side,el){
   const layer=document.getElementById('particle-layer');
   const wrap=document.getElementById(side==='player'?'player-char':'enemy-char');
-  const ar=document.getElementById('arena-section').getBoundingClientRect();
-  const wr=wrap.getBoundingClientRect();
-  const cx=wr.left+wr.width/2-ar.left, cy=wr.top+wr.height/2-ar.top;
+  const cx=wrap.offsetLeft+wrap.offsetWidth/2, cy=wrap.offsetTop+wrap.offsetHeight/2;
   const color=ELEM[el].color;
   for(let i=0;i<22;i++){
     const p=document.createElement('div');p.className='particle';
@@ -1760,9 +1757,7 @@ function spawnElementAura(side,el){
 function spawnHitParticles(side,color){
   const layer=document.getElementById('particle-layer');
   const wrap=document.getElementById(side==='player'?'player-char':'enemy-char');
-  const ar=document.getElementById('arena-section').getBoundingClientRect();
-  const wr=wrap.getBoundingClientRect();
-  const cx=wr.left+wr.width/2-ar.left, cy=wr.top+24-ar.top;
+  const cx=wrap.offsetLeft+wrap.offsetWidth/2, cy=wrap.offsetTop+24;
   for(let i=0;i<32;i++){
     const p=document.createElement('div');p.className='particle';
     const ang=Math.random()*360,d=40+Math.random()*100;
@@ -1790,10 +1785,8 @@ function spawnHealFX(){
 function spawnDmgNum(val,isCrit,side){
   const layer=document.getElementById('particle-layer');
   const wrap=document.getElementById(side==='player'?'player-char':'enemy-char');
-  const ar=document.getElementById('arena-section').getBoundingClientRect();
-  const wr=wrap.getBoundingClientRect();
-  const x=wr.left+wr.width/2-ar.left+(Math.random()-.5)*24;
-  const y=wr.top+16-ar.top;
+  const x=wrap.offsetLeft+wrap.offsetWidth/2+(Math.random()-.5)*24;
+  const y=wrap.offsetTop+16;
   const el=document.createElement('div');
   el.style.cssText=`position:absolute;left:${x}px;top:${y}px;
     font-size:${isCrit?36:26}px;font-weight:bold;pointer-events:none;z-index:60;
@@ -2470,9 +2463,11 @@ function generateEndlessEnemy(wave,isBoss,tmpl){
   }
   // 어떤 템플릿이 뽑히든 같은 웨이브는 동일한 강함이 되도록 스탯 통일
   // 가속 곡선: 초반은 부드럽고 후반엔 가파르게
-  const scale = 1 + wave*0.05 + Math.pow(wave/12, 1.7);
+  const scale    = 1 + wave*0.05 + Math.pow(wave/12, 1.7);
+  // ATK는 약간 더 가파르게(소폭 추가 상승)
+  const atkBonus = 1 + wave*0.012;
   const baseHp   = isBoss?420:180;
-  const baseAtk  = isBoss?40:26;
+  const baseAtk  = isBoss?48:30;
   const baseDef  = isBoss?14:8;
   const baseLuck = isBoss?18:12;
   const hp=Math.floor(baseHp*scale);
@@ -2480,7 +2475,7 @@ function generateEndlessEnemy(wave,isBoss,tmpl){
     ...tmpl,
     name:wave>=50?`[강화] ${tmpl.name}`:tmpl.name,
     hp,maxHp:hp,
-    attack:Math.floor(baseAtk*scale),
+    attack:Math.floor(baseAtk*scale*atkBonus),
     defense:Math.floor(baseDef*scale),
     luck:Math.min(baseLuck+Math.floor(wave/10),45),
     boss:!!isBoss,
