@@ -290,6 +290,23 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
 .sy-slot .sy-name{font-size:8px;color:#b08040;text-align:center;padding:0 2px;line-height:1.2;}
 .sy-slot .sy-label{position:absolute;top:2px;left:3px;font-size:8px;color:#5a3818;}
 .sy-arrow{font-size:16px;color:#4a2808;flex-shrink:0;}
+.sy-mat-wrap{
+  position:relative;flex:0 0 64px;aspect-ratio:1;max-height:80px;
+  border:2px dashed #3a2008;background:#080602;
+  padding:9px 4px 4px;cursor:pointer;transition:border-color .15s;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+}
+.sy-mat-wrap.active-slot{border-color:#f0c060!important;background:#1a1400!important;
+  box-shadow:0 0 10px rgba(240,192,0,.4);}
+.sy-mat-wrap .sy-label{position:absolute;top:1px;left:3px;font-size:7px;color:#5a3818;letter-spacing:0;}
+.sy-mat-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%;height:100%;}
+.sy-mat-cell{
+  border:1px solid #2a1806;background:#050402;color:#3a2a08;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;line-height:1;min-height:0;
+}
+.sy-mat-cell.has-item{border-color:#6a4a10;background:#120c04;cursor:pointer;}
+.sy-mat-cell.has-item:hover{border-color:#e04040;}
 .sy-preview{
   background:#080602;border:1px solid #2a1806;padding:5px 7px;
   font-size:10px;color:#907050;line-height:1.6;min-height:54px;flex:1;
@@ -405,7 +422,7 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
 /* Stage Clear Overlay */
 #stageclear-ov{background:rgba(2,5,2,.94);backdrop-filter:blur(2px);}
 .sc-box{
-  background:#080e08;border:2px solid #406040;padding:20px;width:700px;max-height:88vh;
+  background:#080e08;border:2px solid #406040;padding:22px;width:780px;max-width:96%;max-height:92vh;
   overflow-y:auto;box-shadow:0 0 50px rgba(40,160,40,.25);
   display:flex;flex-direction:column;gap:14px;
 }
@@ -839,16 +856,15 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
   <div id="synth-panel">
     <div class="sy-title">합성 (⚗️ Mix)</div>
     <div class="sy-slots-row">
-      <div class="sy-slot" id="sy-left" data-synth="left" onclick="activateSynthSlot('left')" title="클릭 → 활성화 후 인벤토리에서 아이템 선택">
-        <div class="sy-label">재료</div>
-        <div class="sy-emoji" id="sl-emoji">+</div>
-        <div class="sy-name" id="sl-name"></div>
-      </div>
-      <div class="sy-arrow">→</div>
-      <div class="sy-slot" id="sy-right" data-synth="right" onclick="activateSynthSlot('right')" title="클릭 → 활성화 후 인벤토리에서 아이템 선택">
+      <div class="sy-slot" id="sy-base" data-synth="base" onclick="activateSynthSlot('base')" title="베이스 (유지·강화될 아이템)">
         <div class="sy-label">베이스</div>
-        <div class="sy-emoji" id="sr-emoji">+</div>
-        <div class="sy-name" id="sr-name"></div>
+        <div class="sy-emoji" id="sb-emoji">+</div>
+        <div class="sy-name" id="sb-name"></div>
+      </div>
+      <div class="sy-arrow">←</div>
+      <div class="sy-mat-wrap" id="sy-mat-wrap" data-synth="material" onclick="activateSynthSlot('material')" title="재료 ×4 (소비)">
+        <div class="sy-label">재료 ×4</div>
+        <div class="sy-mat-grid" id="sy-mat-grid"></div>
       </div>
     </div>
     <div class="sy-preview" id="sy-preview">아이템을 슬롯에 넣으면 결과를 미리볼 수 있습니다</div>
@@ -962,16 +978,15 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
     <div class="sc-section-title">⚗️ 합성 <span style="color:#5a4020;font-size:10px;">(슬롯 클릭 → 노란색 활성화 → 아이템 클릭)</span></div>
     <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
       <div style="display:flex;gap:8px;align-items:center;">
-        <div class="sc-eq-slot" id="mv-sy-left" data-synth="left" style="width:80px;flex-direction:column;text-align:center;cursor:pointer;" onclick="activateSynthSlot('left')" title="클릭 후 아래 인벤토리에서 아이템 선택">
-          <div id="mv-sl-ico" style="font-size:24px;min-height:28px;">+</div>
-          <div style="font-size:9px;color:#6a4010;">재료(소비)</div>
-          <div style="font-size:9px;color:#c08030;" id="mv-sl-name"></div>
-        </div>
-        <div style="font-size:18px;color:#6a4010;">→</div>
-        <div class="sc-eq-slot" id="mv-sy-right" data-synth="right" style="width:80px;flex-direction:column;text-align:center;cursor:pointer;" onclick="activateSynthSlot('right')" title="클릭 후 아래 인벤토리에서 아이템 선택">
-          <div id="mv-sr-ico" style="font-size:24px;min-height:28px;">+</div>
+        <div class="sc-eq-slot" id="mv-sy-base" data-synth="base" style="width:90px;flex-direction:column;text-align:center;cursor:pointer;" onclick="activateSynthSlot('base')" title="베이스 (유지·강화될 아이템)">
+          <div id="mv-sb-ico" style="font-size:26px;min-height:30px;">+</div>
           <div style="font-size:9px;color:#6a4010;">베이스(유지)</div>
-          <div style="font-size:9px;color:#c08030;" id="mv-sr-name"></div>
+          <div style="font-size:9px;color:#c08030;" id="mv-sb-name"></div>
+        </div>
+        <div style="font-size:18px;color:#6a4010;">←</div>
+        <div class="sc-eq-slot" id="mv-sy-materials" data-synth="material" style="width:70px;flex-direction:column;text-align:center;cursor:pointer;padding:6px 4px;" onclick="activateSynthSlot('material')" title="재료 ×4 (소비)">
+          <div style="font-size:8px;color:#6a4010;margin-bottom:2px;">재료 ×4</div>
+          <div id="mv-sy-mat-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%;"></div>
         </div>
       </div>
       <div style="flex:1;min-width:180px;">
@@ -1148,7 +1163,7 @@ const ITEMS={
   potion_lck:{id:'potion_lck',name:'행운물약',type:'potion',element:'normal',emoji:'🍵',img:'images/potion_lck.png',
     stats:{attack:0,defense:0,hp:0,luck:40},turns:3,desc:'행운+40 (3턴)'},
   potion_hp:{id:'potion_hp',name:'회복물약',type:'potion',element:'normal',emoji:'❤️‍🔥',img:'images/potion_hp.png',
-    stats:{attack:0,defense:0,hp:50,luck:0},turns:0,desc:'HP+50 즉시'},
+    stats:{attack:0,defense:0,hp:50,luck:0},healPct:40,turns:0,desc:'최대 HP의 40% 회복'},
   stone_water:{id:'stone_water',name:'물의 원소석',type:'stone',element:'water',emoji:'💧',
     stats:{attack:0,defense:15,hp:0,luck:0},desc:'방어+15 강화 / 속성 변환',specialty:['defense']},
   stone_fire:{id:'stone_fire',name:'불의 원소석',type:'stone',element:'fire',emoji:'🔥',
@@ -1170,13 +1185,13 @@ const ENEMIES=[
   {id:'elder_treant',name:'고목 트리언트',emoji:'🌲',img:'images/elder_treant.png',element:'grass',hp:200,attack:22,defense:14,luck:6,stage:1,boss:true,
    loot:['vine_whip','bark_armor','lucky_charm'],stoneDrop:'grass',stoneCh:.9,special:'덩굴 속박'},
   // ── STAGE 2 ──
-  {id:'fire_imp',name:'화염 임프',emoji:'👿',img:'images/fire_imp.png',element:'fire',hp:88,attack:20,defense:9,luck:10,stage:2,boss:false,
+  {id:'fire_imp',name:'화염 임프',emoji:'👿',img:'images/fire_imp.png',element:'fire',hp:138,attack:20,defense:9,luck:10,stage:2,boss:false,
    loot:['fire_sword','potion_atk','chain_mail'],stoneDrop:'fire',stoneCh:.3},
-  {id:'magma_toad',name:'용암 두꺼비',emoji:'🐸',img:'images/magma_toad.png',element:'fire',hp:110,attack:24,defense:12,luck:6,stage:2,boss:false,
+  {id:'magma_toad',name:'용암 두꺼비',emoji:'🐸',img:'images/magma_toad.png',element:'fire',hp:160,attack:24,defense:12,luck:6,stage:2,boss:false,
    loot:['flame_ward','potion_hp','power_ring'],stoneDrop:'fire',stoneCh:.35},
-  {id:'flame_serpent',name:'불꽃 뱀',emoji:'🐍',img:'images/flame_serpent.png',element:'fire',hp:100,attack:27,defense:9,luck:14,stage:2,boss:false,
+  {id:'flame_serpent',name:'불꽃 뱀',emoji:'🐍',img:'images/flame_serpent.png',element:'fire',hp:150,attack:27,defense:9,luck:14,stage:2,boss:false,
    loot:['fire_sword','lucky_charm','potion_lck'],stoneDrop:'fire',stoneCh:.4},
-  {id:'lava_golem',name:'용암 골렘',emoji:'🌋',img:'images/lava_golem.png',element:'fire',hp:300,attack:34,defense:20,luck:7,stage:2,boss:true,
+  {id:'lava_golem',name:'용암 골렘',emoji:'🌋',img:'images/lava_golem.png',element:'fire',hp:400,attack:34,defense:20,luck:7,stage:2,boss:true,
    loot:['fire_sword','flame_ward','power_ring'],stoneDrop:'fire',stoneCh:.9,special:'용암 폭발'},
   // ── STAGE 3 ──
   {id:'sea_sprite',name:'바다 정령',emoji:'🌊',img:'images/sea_sprite.png',element:'water',hp:480,attack:62,defense:30,luck:14,stage:3,boss:false,
@@ -1220,7 +1235,7 @@ let G={
   progress:[false,false,false,false],
   battle:{stageIdx:0,queue:[],qIdx:0,enemy:null,over:false,running:false},
   loot:{items:[],stoneEl:null},
-  synth:{left:null,right:null,leftIsStone:false},
+  synth:{materials:[],base:null,isStone:false}, // 재료: 최대 4개. isStone일 땐 materials=[stone] 단독.
   synthTarget:null,
   phase:'idle', // idle | battle | loot
   endlessBest:0,
@@ -1545,10 +1560,12 @@ function usePotion(idx){
   const pt=p.potions[idx];
   if(!pt) return;
   p.potions.splice(idx,1);
-  if(pt.stats.hp>0&&pt.turns===0){
+  if((pt.healPct>0 || pt.stats.hp>0) && pt.turns===0){
     const st=pStats();
-    p.hp=Math.min(st.hp,p.hp+pt.stats.hp);
-    addLog(`❤️‍🔥 ${pt.name}! HP +${pt.stats.hp}`,'heal');
+    // 최대 HP 비례 회복 우선, 없으면 고정값
+    const heal = pt.healPct>0 ? Math.floor(st.hp * pt.healPct/100) : pt.stats.hp;
+    p.hp=Math.min(st.hp,p.hp+heal);
+    addLog(`❤️‍🔥 ${pt.name}! HP +${heal}`,'heal');
     spawnHealFX();
   } else {
     for(const sk of Object.keys(pt.stats).filter(k=>pt.stats[k]>0&&k!=='hp'))
@@ -1666,11 +1683,13 @@ async function animPlayerAttack(isCrit,el){
 
   // 착지 시점에 이펙트
   setTimeout(()=>{
-    // 땅 흔들림 - 게임 전체를 흔들기
-    const g=document.getElementById('game');
-    g.style.animation='none'; void g.offsetWidth;
-    g.style.animation='groundShake .35s ease';
-    setTimeout(()=>g.style.animation='',400);
+    // 땅 흔들림 - arena만 흔들기 (모바일 fit transform 보존)
+    const g=document.getElementById('arena-section')||document.getElementById('top-panel');
+    if(g){
+      g.style.animation='none'; void g.offsetWidth;
+      g.style.animation='groundShake .35s ease';
+      setTimeout(()=>g.style.animation='',400);
+    }
 
     // 충격파 원 (적 발밑에)
     const impact=document.createElement('div');
@@ -1964,12 +1983,12 @@ document.getElementById('ctx-equip').onclick=(e)=>{
 };
 document.getElementById('ctx-synth-left').onclick=(e)=>{
   e.stopPropagation();
-  if(_ctxItem){G.synthTarget='left';selectSynthItem(_ctxItem,false);}
+  if(_ctxItem){G.synthTarget='material';selectSynthItem(_ctxItem,false);}
   hideItemCtx();
 };
 document.getElementById('ctx-synth-right').onclick=(e)=>{
   e.stopPropagation();
-  if(_ctxItem){G.synthTarget='right';selectSynthItem(_ctxItem,false);}
+  if(_ctxItem){G.synthTarget='base';selectSynthItem(_ctxItem,false);}
   hideItemCtx();
 };
 
@@ -2051,7 +2070,7 @@ function renderInvGrid(){
   const grid=document.getElementById('inv-grid');
   grid.innerHTML='';
   const syn=G.synth;
-  const equip=p.inventory.filter(i=>['weapon','armor','accessory'].includes(i.type)&&i!==syn.left&&i!==syn.right);
+  const equip=p.inventory.filter(i=>['weapon','armor','accessory'].includes(i.type)&&!syn.materials.includes(i)&&i!==syn.base);
   document.getElementById('inv-count').textContent=`${equip.length}/20`;
 
   const TOTAL=20;
@@ -2078,22 +2097,25 @@ function typeKr(t){return{weapon:'무기',armor:'방어구',accessory:'장신구
 let _activeSynthSlot = null;
 
 function activateSynthSlot(target) {
+  // 레거시 호환
+  if(target==='left') target='material';
+  else if(target==='right') target='base';
   // 같은 슬롯 다시 누르면 비활성화
   _activeSynthSlot = (_activeSynthSlot === target) ? null : target;
 
-  // 하단 패널 슬롯 (#sy-left, #sy-right)
-  const bL = document.getElementById('sy-left');
-  const bR = document.getElementById('sy-right');
-  if (bL) bL.classList.toggle('active-slot', _activeSynthSlot === 'left');
-  if (bR) bR.classList.toggle('active-slot', _activeSynthSlot === 'right');
+  // 하단 패널 슬롯
+  const bBase = document.getElementById('sy-base');
+  const bMat  = document.getElementById('sy-mat-wrap');
+  if (bBase) bBase.classList.toggle('active-slot', _activeSynthSlot === 'base');
+  if (bMat)  bMat .classList.toggle('active-slot', _activeSynthSlot === 'material');
 
-  // 관리 오버레이 슬롯 (#mv-sy-left, #mv-sy-right)
-  const mL = document.getElementById('mv-sy-left');
-  const mR = document.getElementById('mv-sy-right');
-  if (mL) mL.classList.toggle('active-slot', _activeSynthSlot === 'left');
-  if (mR) mR.classList.toggle('active-slot', _activeSynthSlot === 'right');
+  // 관리 오버레이 슬롯
+  const mBase = document.getElementById('mv-sy-base');
+  const mMat  = document.getElementById('mv-sy-materials');
+  if (mBase) mBase.classList.toggle('active-slot', _activeSynthSlot === 'base');
+  if (mMat)  mMat .classList.toggle('active-slot', _activeSynthSlot === 'material');
 
-  // 인벤토리 슬롯에 synth-mode 표시 (하단 패널 + 관리 오버레이)
+  // 인벤토리 슬롯에 synth-mode 표시
   document.querySelectorAll('.inv-slot:not(.empty), .sc-inv-slot:not(.empty)').forEach(s => {
     s.classList.toggle('synth-mode', !!_activeSynthSlot);
   });
@@ -2101,7 +2123,7 @@ function activateSynthSlot(target) {
 
 function clearActiveSynthSlot() {
   _activeSynthSlot = null;
-  ['sy-left','sy-right','mv-sy-left','mv-sy-right'].forEach(id => {
+  ['sy-base','sy-mat-wrap','mv-sy-base','mv-sy-materials'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active-slot');
   });
@@ -2254,7 +2276,7 @@ function renderManageOv(){
 
   // 인벤토리
   const ig=document.getElementById('mv-inv-grid');ig.innerHTML='';
-  const items=p.inventory.filter(i=>['weapon','armor','accessory'].includes(i.type)&&i!==syn.left&&i!==syn.right);
+  const items=p.inventory.filter(i=>['weapon','armor','accessory'].includes(i.type)&&!syn.materials.includes(i)&&i!==syn.base);
   const TOTAL=16;
   for(let i=0;i<TOTAL;i++){
     const item=items[i];
@@ -2277,45 +2299,64 @@ function renderManageOv(){
     ig.appendChild(slot);
   }
 
-  // 합성 슬롯
-  document.getElementById('mv-sl-ico').innerHTML=syn.left?itemIconHtml(syn.left,'28px'):'+';
-  document.getElementById('mv-sl-name').textContent=syn.left?syn.left.name:'';
-  document.getElementById('mv-sr-ico').innerHTML=syn.right?itemIconHtml(syn.right,'28px'):'+';
-  document.getElementById('mv-sr-name').textContent=syn.right?syn.right.name:'';
+  // 합성 슬롯: 베이스
+  document.getElementById('mv-sb-ico').innerHTML=syn.base?itemIconHtml(syn.base,'28px'):'+';
+  document.getElementById('mv-sb-name').textContent=syn.base?syn.base.name:'';
+  // 재료 그리드 (manage view)
+  const matGrid=document.getElementById('mv-sy-mat-grid');
+  if(matGrid){
+    matGrid.innerHTML='';
+    for(let i=0;i<4;i++){
+      const m=syn.materials[i];
+      const cell=document.createElement('div');
+      cell.style.cssText='border:1px solid #2a1806;background:#050402;min-height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#3a2a08;'+(m?'border-color:#6a4a10;background:#120c04;cursor:pointer;':'');
+      if(m){
+        cell.innerHTML=itemIconHtml(m,'18px');
+        cell.title=`${m.name}\n클릭 → 제거`;
+        cell.onclick=(ev)=>{ev.stopPropagation();G.synth.materials.splice(i,1);if(G.synth.materials.length===0)G.synth.isStone=false;renderManageOv();};
+      } else {
+        cell.textContent='+';
+      }
+      matGrid.appendChild(cell);
+    }
+  }
 
   // 합성 미리보기
   const prev=document.getElementById('mv-sy-preview');
   const btn=document.getElementById('mv-synth-btn');
-  if(!syn.left||!syn.right){prev.textContent='슬롯에 아이템을 배치하세요';btn.disabled=true;}
-  else if(syn.leftIsStone){
-    const el=syn.left.element;
-    const sameEl=(syn.left.element===syn.right.element);
+  if(!syn.base||syn.materials.length===0){prev.textContent='베이스 + 재료를 선택하세요';btn.disabled=true;}
+  else if(syn.isStone){
+    const stone=syn.materials[0];
+    const el=stone.element;
+    const sameEl=(stone.element===syn.base.element);
     const raw={};
     for(const sk of STAT_KEYS){
-      const base=syn.left.stats[sk]||0; if(!base) continue;
-      let rate=synthRate(syn.left,sk);
+      const b=stone.stats[sk]||0; if(!b) continue;
+      let rate=synthRate(stone,sk);
       if(sameEl) rate=Math.min(rate+0.1,0.9);
-      raw[sk]=Math.floor(base*rate);
+      raw[sk]=Math.floor(b*rate);
     }
-    const stoneGained=capGains(syn.right,raw);
+    const stoneGained=capGains(syn.base,raw);
     const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(stoneGained[k]>0));
     const stoneStr=Object.entries(stoneGained).filter(([,v])=>v>0)
       .map(([k,v])=>`<span style="color:${sameEl?'#ffe080':'#80e080'}">${statSym(k)}+${v}${sameEl?'🔥':''}</span>`).join(' ');
-    prev.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 속성 → <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span>${stoneStr?` &nbsp;+&nbsp;${stoneStr}`:''}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.right)}</span>`:''}`;
+    prev.innerHTML=`<span style="color:#f0c060">${syn.base.name}</span> 속성 → <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span>${stoneStr?` &nbsp;+&nbsp;${stoneStr}`:''}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.base)}</span>`:''}`;
     btn.disabled=false;
   } else {
     const raw={};
-    for(const sk of STAT_KEYS){
-      const rate=synthRate(syn.left,sk);
-      raw[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*rate);
+    for(const sk of STAT_KEYS) raw[sk]=0;
+    for(const mat of syn.materials){
+      for(const sk of STAT_KEYS){
+        const rate=synthRate(mat,sk);
+        raw[sk]+=Math.floor(((mat.stats[sk]||0)+(mat.bonus?.[sk]||0))*rate);
+      }
     }
-    const gained=capGains(syn.right,raw);
+    const gained=capGains(syn.base,raw);
     const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(gained[k]>0));
     const txt=Object.entries(gained).filter(([,v])=>v>0).map(([k,v])=>{
-      const isSpec=(SYNTH_SPECIALTY[syn.left.type]||[]).includes(k);
-      return `<span style="color:${isSpec?'#80ff80':'#d0c080'}">${statSym(k)}+${v}${isSpec?'★':''}</span>`;
+      return `<span style="color:#d0c080">${statSym(k)}+${v}</span>`;
     }).join(' ');
-    prev.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 흡수: ${txt||'(없음)'}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.right)}</span>`:''}`;
+    prev.innerHTML=`<span style="color:#f0c060">${syn.base.name}</span> 흡수 ×${syn.materials.length}: ${txt||'(없음)'}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.base)}</span>`:''}`;
     btn.disabled=false;
   }
 
@@ -2526,13 +2567,38 @@ function continueEndlessWave(){
 //  SYNTHESIS
 // ════════════════════════════════════════════════
 function renderSynthPanel(){
-  const syn=G.synth;const p=G.player;
-  document.getElementById('sl-emoji').innerHTML=syn.left?itemIconHtml(syn.left,'32px'):'+';
-  document.getElementById('sl-name').textContent=syn.left?syn.left.name:'';
-  document.getElementById('sr-emoji').innerHTML=syn.right?itemIconHtml(syn.right,'32px'):'+';
-  document.getElementById('sr-name').textContent=syn.right?syn.right.name:'';
-  document.getElementById('sy-left').classList.toggle('has-item',!!syn.left);
-  document.getElementById('sy-right').classList.toggle('has-item',!!syn.right);
+  const syn=G.synth;
+  // 베이스 (왼쪽, 큰 슬롯)
+  const baseEmoji=document.getElementById('sb-emoji');
+  const baseName=document.getElementById('sb-name');
+  if(baseEmoji) baseEmoji.innerHTML=syn.base?itemIconHtml(syn.base,'32px'):'+';
+  if(baseName) baseName.textContent=syn.base?syn.base.name:'';
+  const baseSlot=document.getElementById('sy-base');
+  if(baseSlot) baseSlot.classList.toggle('has-item',!!syn.base);
+
+  // 재료 (오른쪽 2x2 그리드, 작은 셀)
+  const grid=document.getElementById('sy-mat-grid');
+  if(grid){
+    grid.innerHTML='';
+    for(let i=0;i<4;i++){
+      const m=syn.materials[i];
+      const cell=document.createElement('div');
+      cell.className='sy-mat-cell'+(m?' has-item':'');
+      if(m){
+        cell.innerHTML=itemIconHtml(m,'24px');
+        cell.title=`${m.name}\n클릭 → 제거`;
+        cell.onclick=(ev)=>{
+          ev.stopPropagation();
+          G.synth.materials.splice(i,1);
+          if(G.synth.materials.length===0) G.synth.isStone=false;
+          renderBottomUI();
+        };
+      } else {
+        cell.innerHTML='+';
+      }
+      grid.appendChild(cell);
+    }
+  }
   updateSynthPreview();
 }
 
@@ -2540,45 +2606,56 @@ function updateSynthPreview(){
   const syn=G.synth;
   const res=document.getElementById('sy-preview');
   const btn=document.getElementById('synth-btn');
-  if(!syn.left||!syn.right){res.textContent='슬롯에 아이템을 배치하세요';btn.disabled=true;return;}
-  if(syn.leftIsStone){
-    const el=syn.left.element;
-    const sameEl=(syn.left.element===syn.right.element);
+  if(!syn.base||syn.materials.length===0){res.textContent='베이스 + 재료를 선택하세요';btn.disabled=true;return;}
+  if(syn.isStone){
+    const stone=syn.materials[0];
+    const el=stone.element;
+    const sameEl=(stone.element===syn.base.element);
     const raw={};
     for(const sk of STAT_KEYS){
-      const base=syn.left.stats[sk]||0; if(!base) continue;
-      let rate=synthRate(syn.left,sk);
+      const b=stone.stats[sk]||0; if(!b) continue;
+      let rate=synthRate(stone,sk);
       if(sameEl) rate=Math.min(rate+0.1,0.9);
-      raw[sk]=Math.floor(base*rate);
+      raw[sk]=Math.floor(b*rate);
     }
-    const stoneGained=capGains(syn.right,raw);
+    const stoneGained=capGains(syn.base,raw);
     const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(stoneGained[k]>0));
     const stoneStr=Object.entries(stoneGained).filter(([,v])=>v>0)
       .map(([k,v])=>`${statSym(k)}+${v}${sameEl?'🔥':''}`).join(' ');
-    res.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span> 속성 →
+    res.innerHTML=`<span style="color:#f0c060">${syn.base.name}</span> 속성 →
       <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span><br>
-      ${stoneStr?`<span style="color:${sameEl?'#ffe080':'#80e080'}">${stoneStr} 강화${sameEl?' (동일속성 보너스)':''}</span><br>`:''}${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.right)})</span><br>`:''}원소석 1개 소비`;
+      ${stoneStr?`<span style="color:${sameEl?'#ffe080':'#80e080'}">${stoneStr} 강화${sameEl?' (동일속성 보너스)':''}</span><br>`:''}${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.base)})</span><br>`:''}원소석 1개 소비`;
   } else {
+    // 모든 재료 합산
     const raw={};
-    for(const sk of STAT_KEYS)
-      raw[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*.65);
-    const gained=capGains(syn.right,raw);
+    for(const sk of STAT_KEYS) raw[sk]=0;
+    for(const mat of syn.materials){
+      for(const sk of STAT_KEYS){
+        const rate=synthRate(mat,sk);
+        raw[sk]+=Math.floor(((mat.stats[sk]||0)+(mat.bonus?.[sk]||0))*rate);
+      }
+    }
+    const gained=capGains(syn.base,raw);
     const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(gained[k]>0));
     const txt=Object.entries(gained).filter(([,v])=>v>0).map(([k,v])=>`${statSym(k)}+${v}`).join(' ');
-    res.innerHTML=`<span style="color:#f0c060">${syn.right.name}</span>이(가)<br>
-      ${txt||'(없음)'} 흡수<br>
-      ${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.right)})</span><br>`:''}<span style="color:#e05040">${syn.left.name}</span> 소비됨`;
+    res.innerHTML=`<span style="color:#f0c060">${syn.base.name}</span>이(가)<br>
+      ${txt||'(없음)'} 흡수 (재료 ${syn.materials.length}개)<br>
+      ${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.base)})</span><br>`:''}<span style="color:#e05040">${syn.materials.map(m=>m.name).join(', ')}</span> 소비됨`;
   }
   btn.disabled=false;
 }
 
 function openSynthModal(target){
+  // 레거시 호환
+  if(target==='left') target='material';
+  else if(target==='right') target='base';
   G.synthTarget=target;
   document.getElementById('sm-title').textContent=
-    target==='left'?'재료 선택 (소비)':'베이스 선택 (유지)';
+    target==='material'?'재료 선택 (소비, 여러 개 가능)':'베이스 선택 (유지)';
   const mg=document.getElementById('sm-grid');mg.innerHTML='';
   const p=G.player;
-  const other=target==='left'?G.synth.right:G.synth.left;
+  // 다른 슬롯에 이미 들어간 아이템은 후보에서 제외
+  const excluded = target==='material' ? [G.synth.base, ...G.synth.materials].filter(Boolean) : [G.synth.base, ...G.synth.materials].filter(Boolean);
 
   // 인벤토리 아이템
   const invItems=p.inventory.filter(i=>['weapon','armor','accessory'].includes(i.type));
@@ -2588,7 +2665,7 @@ function openSynthModal(target){
   const allItems=[...invItems,...eqItems.filter(e=>!invItems.includes(e))];
 
   allItems.forEach(item=>{
-    if(item===other) return; // 반대 슬롯에 이미 있는 아이템 제외
+    if(excluded.includes(item)) return; // 이미 사용 중인 아이템 제외
     const d=document.createElement('div');d.className='inv-item';
     const isEq=eqItems.includes(item)&&!invItems.includes(item);
     d.style.cssText='border:1px solid #3a2008;padding:5px 8px;font-size:11px;cursor:pointer;'+
@@ -2599,7 +2676,7 @@ function openSynthModal(target){
     mg.appendChild(d);
   });
 
-  if(target==='left'){
+  if(target==='material'){
     [['stone_water','water'],['stone_fire','fire'],['stone_grass','grass']].forEach(([sid,el])=>{
       if(p.stones[el]>0){
         const tmpl=ITEMS[sid];const d=document.createElement('div');
@@ -2620,9 +2697,22 @@ function openSynthModal(target){
 function closeSynthModal(){document.getElementById('synth-modal').style.display='none';}
 
 function selectSynthItem(item,isStone){
+  const syn=G.synth;
   const t=G.synthTarget;
-  if(t==='left'){G.synth.left=item;G.synth.leftIsStone=isStone;}
-  else{if(isStone)return;G.synth.right=item;}
+  if(t==='base'||t==='right'){
+    if(isStone) return;
+    syn.base=item;
+  } else { // 'material' (또는 레거시 'left')
+    if(isStone){
+      syn.materials=[item];
+      syn.isStone=true;
+    } else {
+      if(syn.isStone){ syn.materials=[]; syn.isStone=false; }
+      if(!syn.materials.includes(item) && syn.materials.length<4){
+        syn.materials.push(item);
+      }
+    }
+  }
   renderBottomUI();
 }
 
@@ -2630,57 +2720,62 @@ function selectSynthItem(item,isStone){
 function selectStone(el){
   if(G.player.stones[el]<=0) return;
   const sid={water:'stone_water',fire:'stone_fire',grass:'stone_grass'}[el];
-  G.synthTarget='left';
+  G.synthTarget='material';
   selectSynthItem(iInst(ITEMS[sid]),true);
 }
 
 function doSynth(){
-  const syn=G.synth;if(!syn.left||!syn.right) return;
-  const p=G.player;const right=syn.right;
-  if(syn.leftIsStone){
-    // 원소석 합성: 속성 변환 + 능력치 강화 (synthRate 적용, 동일속성 추가 보너스)
-    right.element=syn.left.element;
-    if(!right.bonus) right.bonus={attack:0,defense:0,hp:0,luck:0};
-    const sameEl=(syn.left.element===right.element);
+  const syn=G.synth;
+  if(!syn.base||syn.materials.length===0) return;
+  const p=G.player;const base=syn.base;
+  if(!base.bonus) base.bonus={attack:0,defense:0,hp:0,luck:0};
+
+  if(syn.isStone){
+    // 원소석 합성: 속성 변환 + 능력치 강화
+    const stone=syn.materials[0];
+    const sameElBefore=(stone.element===base.element);
+    base.element=stone.element;
     const raw={};
     for(const sk of STAT_KEYS){
-      const base=syn.left.stats[sk]||0;
-      if(!base) continue;
-      let rate=synthRate(syn.left,sk);           // 특화 80%, 일반 60%
-      if(sameEl) rate=Math.min(rate+0.1, 0.9);  // 동일속성 +10% (최대 90%)
-      raw[sk]=Math.floor(base*rate);
+      const b=stone.stats[sk]||0; if(!b) continue;
+      let rate=synthRate(stone,sk);
+      if(sameElBefore) rate=Math.min(rate+0.1,0.9);
+      raw[sk]=Math.floor(b*rate);
     }
-    const gains=capGains(right,raw);
-    for(const sk of STAT_KEYS) if(gains[sk]) right.bonus[sk]=(right.bonus[sk]||0)+gains[sk];
-    p.stones[syn.left.element]--;
+    const gains=capGains(base,raw);
+    for(const sk of STAT_KEYS) if(gains[sk]) base.bonus[sk]=(base.bonus[sk]||0)+gains[sk];
+    p.stones[stone.element]--;
   } else {
-    // 아이템 합성: 특화 스탯 80%, 일반 스탯 60% 흡수
-    if(!right.bonus) right.bonus={attack:0,defense:0,hp:0,luck:0};
+    // 아이템 합성: 모든 재료를 동시에 흡수 (합산 후 한도 적용)
     const raw={};
-    for(const sk of STAT_KEYS){
-      const rate=synthRate(syn.left, sk);
-      raw[sk]=Math.floor(((syn.left.stats[sk]||0)+(syn.left.bonus?.[sk]||0))*rate);
+    for(const sk of STAT_KEYS) raw[sk]=0;
+    for(const mat of syn.materials){
+      for(const sk of STAT_KEYS){
+        const rate=synthRate(mat,sk);
+        raw[sk]+=Math.floor(((mat.stats[sk]||0)+(mat.bonus?.[sk]||0))*rate);
+      }
     }
-    const gains=capGains(right,raw);
-    for(const sk of STAT_KEYS) if(gains[sk]) right.bonus[sk]=(right.bonus[sk]||0)+gains[sk];
-    // 재료 제거 (인벤토리 또는 장착슬롯에서)
-    const li=p.inventory.indexOf(syn.left);
-    if(li!==-1){
-      p.inventory.splice(li,1);
-    } else {
-      // 장착 중인 아이템이 재료로 쓰인 경우
-      for(const sl of ['weapon','armor','accessory']){
-        if(p.equipment[sl]===syn.left){p.equipment[sl]=null;break;}
+    const gains=capGains(base,raw);
+    for(const sk of STAT_KEYS) if(gains[sk]) base.bonus[sk]=(base.bonus[sk]||0)+gains[sk];
+    // 재료 모두 제거 (인벤토리 또는 장착슬롯)
+    for(const mat of syn.materials){
+      const li=p.inventory.indexOf(mat);
+      if(li!==-1){ p.inventory.splice(li,1); }
+      else {
+        for(const sl of ['weapon','armor','accessory']){
+          if(p.equipment[sl]===mat){p.equipment[sl]=null;break;}
+        }
       }
     }
   }
   const st=pStats();p.maxHp=st.hp;p.hp=Math.min(p.hp,p.maxHp);
-  syn.left=null;syn.right=null;syn.leftIsStone=false;
+  syn.materials=[];syn.base=null;syn.isStone=false;
   renderBottomUI();
-  document.getElementById('sy-preview').innerHTML='<span style="color:#50c050">✅ 합성 완료!</span>';
+  const prevEl=document.getElementById('sy-preview');
+  if(prevEl) prevEl.innerHTML='<span style="color:#50c050">✅ 합성 완료!</span>';
   if(document.getElementById('manage-ov').style.display!=='none') renderManageOv();
 }
-function clearSynth(){G.synth={left:null,right:null,leftIsStone:false};renderBottomUI();}
+function clearSynth(){G.synth={materials:[],base:null,isStone:false};renderBottomUI();}
 
 // ════════════════════════════════════════════════
 //  INIT
