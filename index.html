@@ -1209,6 +1209,42 @@ const ENEMIES=[
    loot:['dark_blade','shadow_amulet','vital_pendant'],stoneDrop:null,stoneCh:0,special:'어둠의 폭풍'},
 ];
 
+// ════════════════════════════════════════════════
+//  스프라이트 시퀀스 애니메이션 시스템
+//  - 등록된 키는 images/{key}/{state}/{NN}.png 시퀀스 순환 재생
+//  - 등록 안된 캐릭터는 기존 단일 PNG로 자동 폴백
+//  - 예: 'goblin': { idle: 8, attack: 12 }
+//        → images/goblin/idle/01.png ~ 08.png, images/goblin/attack/01.png ~ 12.png
+//  - itch.io 팩 받으면 폴더 만들고 PNG 넣은 뒤, 아래 SPRITE_FRAMES에만 등록하면 됨
+// ════════════════════════════════════════════════
+const SPRITE_FRAMES = {
+  // 'goblin':       { idle: 8, attack: 12 },
+  // 'slime':        { idle: 6, attack: 10 },
+  // 'mage':         { idle: 6, attack: 8 },  // 플레이어 (마법사)
+};
+
+const _spriteTimers = new WeakMap();
+
+function playSpriteAnim(imgEl, key, state, fps=10){
+  stopSpriteAnim(imgEl);
+  const frames = SPRITE_FRAMES[key]?.[state];
+  if(!frames || frames<=1) return false; // 등록 없음 → 단일 이미지 유지
+  let i=0;
+  const apply=()=>{
+    const n=String(i+1).padStart(2,'0');
+    imgEl.src=`images/${key}/${state}/${n}.png`;
+    i=(i+1)%frames;
+  };
+  apply();
+  _spriteTimers.set(imgEl,setInterval(apply,1000/fps));
+  return true;
+}
+
+function stopSpriteAnim(imgEl){
+  const id=_spriteTimers.get(imgEl);
+  if(id){ clearInterval(id); _spriteTimers.delete(imgEl); }
+}
+
 const STAGES=[
   {id:1,name:'어두운 숲',  emoji:'🌲',element:'grass',
    enemies:['slime','goblin','forest_spirit','wood_golem'],boss:'elder_treant'},
@@ -1450,7 +1486,9 @@ function startNextEnemy(){
   const eSprite=document.getElementById('enemy-sprite');
   eSprite.style.animation='none';void eSprite.offsetWidth;
   if(b.enemy.img){
-    eSprite.innerHTML=`<img src="${b.enemy.img}" style="width:120px;height:120px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='${b.enemy.emoji}'">`;
+    eSprite.innerHTML=`<img id="enemy-img" src="${b.enemy.img}" style="width:120px;height:120px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='${b.enemy.emoji}'">`;
+    const eImg=document.getElementById('enemy-img');
+    if(eImg) playSpriteAnim(eImg, b.enemy.id, 'idle');
   } else {
     eSprite.textContent=b.enemy.emoji;
   }
@@ -1581,6 +1619,7 @@ async function onEnemyDead(){
   const b=G.battle;b.over=true;b.playerDead=false;
   addLog(`✨ ${b.enemy.name} 처치!`,'imp');
   const sp=document.getElementById('enemy-sprite');
+  const eImg=document.getElementById('enemy-img'); if(eImg) stopSpriteAnim(eImg);
   sp.style.animation='deathAnim .7s ease forwards';
   await sleep(900);sp.style.opacity='0';
 
@@ -1639,8 +1678,8 @@ async function animPlayerAttack(isCrit,el){
   const pImg=document.getElementById('player-img');
   const sp=document.getElementById('player-sprite');
 
-  // 1. 마법사 attack 포즈로 전환
-  pImg.src='images/마법사 attack.png';
+  // 1. 마법사 attack 포즈로 전환 (시퀀스 등록되어 있으면 시퀀스, 없으면 단일 PNG)
+  if(!playSpriteAnim(pImg, 'mage', 'attack')) pImg.src='images/마법사 attack.png';
   sp.style.animation='none';void sp.offsetWidth;
   sp.style.animation='castGlow .5s ease';
   if(isCrit) sp.style.filter='brightness(2.2) drop-shadow(0 0 18px #ffaa00)';
@@ -1712,7 +1751,7 @@ async function animPlayerAttack(isCrit,el){
   sp.style.filter='';
 
   // 3. idle 포즈로 복귀
-  pImg.src='images/마법사 idle.png';
+  if(!playSpriteAnim(pImg, 'mage', 'idle')) pImg.src='images/마법사 idle.png';
 }
 
 async function animEnemyAttack(el){
@@ -3179,6 +3218,12 @@ window.addEventListener('orientationchange', ()=>{
 });
 window.addEventListener('load', fitGameToViewport);
 fitGameToViewport();
+
+// 플레이어 idle 시퀀스 시작 시도 (SPRITE_FRAMES에 'mage' 등록 시 자동 작동)
+window.addEventListener('load', ()=>{
+  const pImg=document.getElementById('player-img');
+  if(pImg) playSpriteAnim(pImg, 'mage', 'idle');
+});
 </script>
 </body>
 </html>
