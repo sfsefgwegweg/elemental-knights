@@ -96,6 +96,14 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
 .char-ring{position:absolute;bottom:10px;width:70px;height:14px;border-radius:50%;opacity:.5;filter:blur(3px);}
 
 #particle-layer{position:absolute;inset:0;pointer-events:none;z-index:30;}
+/* 플레이어가 든 권총 뒷모습 */
+#player-gun-back{
+  position:absolute;bottom:8px;left:50%;
+  transform:translateX(-50%);
+  width:130px;height:65px;
+  z-index:35;pointer-events:none;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.55));
+}
 
 /* ── Info panel (right) ── */
 #info-section{
@@ -183,10 +191,24 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
 #mini-ov.active{display:flex;}
 #mini-canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block;background:#000;cursor:crosshair;}
 #mini-hud{
-  position:absolute;top:8px;left:8px;z-index:5;
+  position:absolute;left:8px;bottom:14px;z-index:5;
   background:rgba(8,5,2,.78);padding:8px 10px;border:1px solid #5a3a10;
   font-family:'Courier New',monospace;color:#f0d080;font-size:11px;
   display:flex;flex-direction:column;gap:5px;min-width:170px;letter-spacing:1px;
+}
+#mini-self-bar{
+  position:absolute;top:8px;left:8px;z-index:5;
+  background:rgba(8,5,2,.78);padding:7px 10px;border:1px solid #5a8a50;
+  font-family:'Courier New',monospace;width:170px;
+}
+#mini-minimap-wrap{
+  position:absolute;top:8px;right:8px;z-index:5;
+  background:rgba(8,5,2,.78);padding:5px 6px;border:1px solid #4a6a8a;
+  font-family:'Courier New',monospace;
+}
+#mini-minimap{
+  display:block;image-rendering:pixelated;
+  border:1px solid #2a3a4a;background:#0a0a12;
 }
 .mh-row{display:flex;align-items:center;gap:6px;}
 .mh-label{min-width:18px;font-size:13px;}
@@ -197,7 +219,7 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
 .mh-pot{padding:1px 4px;border:1px solid #5a3818;background:#180e04;cursor:pointer;}
 .mh-pot:hover{border-color:#c08030;}
 #mini-stats{
-  position:absolute;top:8px;right:8px;z-index:5;
+  position:absolute;right:8px;bottom:14px;z-index:5;
   background:rgba(8,5,2,.78);padding:8px 10px;border:1px solid #5a3a10;
   font-family:'Courier New',monospace;color:#f0c060;font-size:11px;text-align:right;
   letter-spacing:1px;display:flex;flex-direction:column;gap:3px;
@@ -800,6 +822,32 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
       </div>
     </div>
     <div id="particle-layer"></div>
+    <!-- 플레이어가 든 권총 뒷모습 (1인칭 hud 느낌) -->
+    <svg id="player-gun-back" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- 슬라이드(뒤쪽 면) -->
+      <rect x="60" y="22" width="80" height="32" fill="#2a2a32" stroke="#0a0a0a" stroke-width="2"/>
+      <rect x="60" y="22" width="80" height="5" fill="#3c3c46"/>
+      <!-- 가늠자 노치 -->
+      <rect x="88" y="10" width="24" height="14" fill="#1a1a1a" stroke="#000" stroke-width="1.5"/>
+      <rect x="98" y="6" width="4" height="6" fill="#fff"/>
+      <!-- 공이치기(해머) -->
+      <rect x="92" y="24" width="16" height="6" fill="#666"/>
+      <!-- 그립 -->
+      <path d="M 72 54 L 128 54 L 122 94 L 78 94 Z" fill="#1c1c22" stroke="#000" stroke-width="2"/>
+      <!-- 그립 패턴 -->
+      <line x1="84" y1="62" x2="116" y2="62" stroke="#3a3a40" stroke-width="1.5"/>
+      <line x1="84" y1="72" x2="116" y2="72" stroke="#3a3a40" stroke-width="1.5"/>
+      <line x1="84" y1="82" x2="116" y2="82" stroke="#3a3a40" stroke-width="1.5"/>
+      <!-- 손 (그립 감싸는) -->
+      <path d="M 60 56 Q 56 76 70 95 L 130 95 Q 144 76 140 56 L 130 60 Q 128 75 122 88 L 78 88 Q 72 75 70 60 Z" fill="#d6a878" stroke="#7a4828" stroke-width="1.5"/>
+      <!-- 손가락 마디 -->
+      <line x1="74" y1="68" x2="80" y2="72" stroke="#8a5838" stroke-width="1"/>
+      <line x1="74" y1="76" x2="80" y2="80" stroke="#8a5838" stroke-width="1"/>
+      <line x1="74" y1="84" x2="80" y2="88" stroke="#8a5838" stroke-width="1"/>
+      <line x1="126" y1="68" x2="120" y2="72" stroke="#8a5838" stroke-width="1"/>
+      <line x1="126" y1="76" x2="120" y2="80" stroke="#8a5838" stroke-width="1"/>
+      <line x1="126" y1="84" x2="120" y2="88" stroke="#8a5838" stroke-width="1"/>
+    </svg>
   </div>
 
   <!-- Info -->
@@ -1147,19 +1195,33 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
 <div id="mini-ov">
   <canvas id="mini-canvas" width="480" height="320"></canvas>
   <div id="mini-hit-vignette"></div>
+  <!-- 좌상단: 미니게임 플레이어 HP 바 -->
+  <div id="mini-self-bar">
+    <div style="font-size:12px;color:#fff;margin-bottom:3px;">🧍 PLAYER</div>
+    <div class="mh-bar" style="height:14px;"><div id="mini-self-fill" style="background:#60d060;width:100%"></div></div>
+    <div style="font-size:10px;color:#ffd060;text-align:right;margin-top:2px;"><span id="mini-self-txt">100/100</span></div>
+    <div style="font-size:9px;color:#8a8aa0;margin-top:3px;letter-spacing:1px;">WASD · SPACE · F · CLICK</div>
+  </div>
+
+  <!-- 좌하단: 본게임 정보 (플레이어/적/물약) -->
   <div id="mini-hud">
     <div class="mh-row"><span class="mh-label">🛡️</span><div class="mh-bar"><div id="mh-php-fill" style="background:#50c050;width:100%"></div></div><span class="mh-num" id="mh-php-txt">100/100</span></div>
     <div class="mh-row"><span class="mh-label">👹</span><div class="mh-bar"><div id="mh-ehp-fill" style="background:#c04040;width:100%"></div></div><span class="mh-num" id="mh-ehp-txt">-/-</span></div>
     <div class="mh-potions" id="mh-potions"></div>
   </div>
+
+  <!-- 우상단: 미니맵 -->
+  <div id="mini-minimap-wrap">
+    <div style="font-size:10px;color:#a0e0ff;text-align:center;margin-bottom:3px;letter-spacing:2px;">MAP</div>
+    <canvas id="mini-minimap" width="140" height="140"></canvas>
+  </div>
+
+  <!-- 우하단(가린 없음): 스테이지/HP/적 수 정보 -->
   <div id="mini-stats">
-    <div class="lvl">⚔️ STAGE <span id="mini-level">1</span></div>
+    <div class="lvl">⚔️ <span id="mini-level">🏛️ LOBBY</span></div>
     <div>HP <span id="mini-hp">100</span>/<span id="mini-maxhp">100</span></div>
     <div>적 <span id="mini-enemies">0</span> 남음</div>
     <div>처치 <span id="mini-kills">0</span></div>
-    <div style="margin-top:6px;font-size:9px;color:#8a6a30;letter-spacing:1px;">
-      WASD · SPACE 대시 · F 처치<br>클릭/🔥 발사
-    </div>
   </div>
   <button id="mini-close-btn" onclick="closeMiniGame()">✕ 본게임 복귀</button>
   <div id="mini-msg"></div>
@@ -1627,9 +1689,6 @@ async function autoBattleLoop(){
   if(b.running) return;
   b.running=true;
   while(!b.over){
-    // 미니게임 진행 중에는 본 전투 일시정지
-    while(window._MINI?.active && !b.over){ await sleep(150); }
-    if(b.over) break;
     setTurn('⚔️ 공격 중','#60d060');
     await sleep(280);
     if(b.over) break;
@@ -3360,7 +3419,8 @@ const _MINI = window._MINI = {
   portal: null,
   promptEnemy: null,    // F 키 대상 (가까이 있는 적)
   zbuf: [],
-  level: 1, kills: 0,
+  level: 0, kills: 0,
+  inLobby: true,
   keys: {},
   joy: { x:0, y:0, active:false, cx:0, cy:0 },
   shooting: false, shootCool: 0,
@@ -3372,6 +3432,17 @@ const _MINI = window._MINI = {
   lastTime: 0, rafId: null,
   msgTimer: null,
 };
+
+// 로비 맵: 외벽만 있는 빈 방, 적 없음, 포탈 즉시 생성
+function _miniGenLobby(){
+  const M = _MINI.MAP;
+  const map = Array.from({length:M},()=>Array(M).fill(0));
+  for(let i=0;i<M;i++){ map[0][i]=1; map[M-1][i]=1; map[i][0]=1; map[i][M-1]=1; }
+  _MINI.map = map;
+  _MINI.enemies = [];
+  // 로비 포탈 — 플레이어 정면 약간 멀리에
+  _MINI.portal = { x: 12.5, y: 8.5, t: 0, isLobby: true };
+}
 
 // 맵 생성: 16x16, 외벽 + 무작위 내부 벽들
 function _miniGenMap(){
@@ -3488,7 +3559,16 @@ function _miniUpdateOwnHUD(){
   document.getElementById('mini-maxhp').textContent = _MINI.player.maxHp;
   document.getElementById('mini-enemies').textContent = _MINI.enemies.length;
   document.getElementById('mini-kills').textContent = _MINI.kills;
-  document.getElementById('mini-level').textContent = _MINI.level;
+  document.getElementById('mini-level').textContent = _MINI.inLobby ? '🏛️ LOBBY' : _MINI.level;
+  // 미니게임 플레이어 체력 바 (좌상단)
+  const phpb = document.getElementById('mini-self-fill');
+  const phpt = document.getElementById('mini-self-txt');
+  if(phpb){
+    const pct = Math.max(0, Math.min(100, _MINI.player.hp/_MINI.player.maxHp*100));
+    phpb.style.width = pct + '%';
+    phpb.style.background = pct>50?'#60d060':pct>25?'#e0a040':'#e04040';
+    phpt.textContent = Math.floor(_MINI.player.hp)+'/'+_MINI.player.maxHp;
+  }
 }
 
 // 입력
@@ -3742,8 +3822,8 @@ function _miniUpdate(dt){
     _MINI.player.hp = 0;
   }
 
-  // 스테이지 클리어 → 포탈 생성
-  if(_MINI.enemies.length === 0 && !_MINI.portal){
+  // 스테이지 클리어 → 포탈 생성 (로비는 항상 포탈 있음)
+  if(!_MINI.inLobby && _MINI.enemies.length === 0 && !_MINI.portal){
     const M = _MINI.MAP;
     let px2, py2, tries=0;
     do {
@@ -3761,6 +3841,7 @@ function _miniUpdate(dt){
     _MINI.portal.t += dt;
     const dx = _MINI.portal.x - p.x, dy = _MINI.portal.y - p.y;
     if(Math.hypot(dx, dy) < 0.7){
+      _MINI.inLobby = false;
       _MINI.level++;
       _MINI.player.hp = Math.min(_MINI.player.maxHp, _MINI.player.hp + 30);
       _miniMsg(`✨ STAGE ${_MINI.level}`, 1500);
@@ -3776,12 +3857,12 @@ function _miniUpdate(dt){
 function _miniRender(){
   const ctx = _MINI.ctx;
   const W = _MINI.canvas.width, H = _MINI.canvas.height;
-  // 하늘(상단) + 바닥(하단)
+  // 천장: 하늘색, 바닥: 잔디색
   const skyGrad = ctx.createLinearGradient(0,0,0,H/2);
-  skyGrad.addColorStop(0,'#1a0e2a'); skyGrad.addColorStop(1,'#3a1c3a');
+  skyGrad.addColorStop(0,'#5fb6ee'); skyGrad.addColorStop(1,'#a8d8f0');
   ctx.fillStyle = skyGrad; ctx.fillRect(0,0,W,H/2);
   const flrGrad = ctx.createLinearGradient(0,H/2,0,H);
-  flrGrad.addColorStop(0,'#1a0c08'); flrGrad.addColorStop(1,'#3a2010');
+  flrGrad.addColorStop(0,'#3a7028'); flrGrad.addColorStop(1,'#1f4a16');
   ctx.fillStyle = flrGrad; ctx.fillRect(0,H/2,W,H/2);
 
   // 벽 캐스팅
@@ -3796,12 +3877,22 @@ function _miniRender(){
     zbuf[i] = corr;
     const wallH = Math.min(H, (H / Math.max(0.1, corr)) * 0.95);
     const top = (H - wallH)/2;
-    const shade = Math.max(0, 220 - corr*22);
-    const r = (shade * (side?0.55:0.78))|0;
-    const g = (shade * 0.32)|0;
-    const b = (shade * 0.22)|0;
+    const shade = Math.max(0, 240 - corr*22);
+    // 나무색 (브라운/오크 톤). side에 따라 약간 다르게 (가짜 음영)
+    const r = (shade * (side?0.55:0.74))|0;
+    const g = (shade * (side?0.34:0.46))|0;
+    const b = (shade * (side?0.18:0.24))|0;
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fillRect(i, top, 1, wallH);
+    // 나무 결 가로 줄무늬 — 살짝 더 어둡게
+    if((i % 3) === 0){
+      ctx.fillStyle = `rgba(${(r*0.7)|0},${(g*0.7)|0},${(b*0.6)|0},0.25)`;
+      const lineCount = 4;
+      for(let lk=0;lk<lineCount;lk++){
+        const ly = top + wallH * (0.18 + lk*0.2);
+        ctx.fillRect(i, ly, 1, 2);
+      }
+    }
   }
 
   // 적 — 거리순 정렬 후 빌보드 렌더
@@ -3822,28 +3913,105 @@ function _miniRender(){
     const size = Math.min(H, (H / dist) * 0.7);
     const top = H/2 - size/2;
     const sx = (screenX - size/2)|0, sw = size|0;
-    // z-buffer 검사 후 픽셀 칸 단위로 그리기
+    // 해골 — 픽셀 칸 단위로 그리기 (z-buffer 검사 포함)
+    const shade = Math.max(80, 230 - dist*16);
+    // 뼈 베이스: 따뜻한 흰색 (prompt면 검정)
+    const boneR = e.prompt ? 12 : 240;
+    const boneG = e.prompt ? 12 : 232;
+    const boneB = e.prompt ? 18 : 200;
+    const cBone = `rgb(${(boneR*shade/255)|0},${(boneG*shade/255)|0},${(boneB*shade/255)|0})`;
+    const cBoneShadow = `rgb(${(boneR*shade*0.6/255)|0},${(boneG*shade*0.6/255)|0},${(boneB*shade*0.6/255)|0})`;
+    const cVoid = e.prompt ? `rgb(${(40*shade/255)|0},${(20*shade/255)|0},${(10*shade/255)|0})` : '#0a0606';
+
+    // 각 영역 Y 좌표
+    const skullTop = top;
+    const skullH = size*0.30;
+    const bodyTop = top + size*0.32;
+    const bodyH = size*0.38;
+    const legTop = top + size*0.72;
+    const legH = size*0.28;
+
     for(let x=0;x<sw;x++){
       const cx = sx + x;
       if(cx<0||cx>=W) continue;
       if(_MINI.zbuf[cx] < dist) continue;
-      const ratio = x/sw;
-      const shade = Math.max(60, 220 - dist*18);
-      let baseR=80, baseG=80, baseB=40;
-      if(e.prompt){ baseR=10; baseG=10; baseB=15; } // F 키 대상은 검은색
-      ctx.fillStyle = `rgb(${(baseR*shade/255)|0},${(baseG*shade/255)|0},${(baseB*shade/255)|0})`;
-      const bodyH = size*0.75;
-      ctx.fillRect(cx, top, 1, bodyH);
-      if(ratio>0.3 && ratio<0.7){
-        ctx.fillStyle = `rgb(${(baseR*shade*0.6/255)|0},${(baseG*shade*0.6/255)|0},${(baseB*shade*0.6/255)|0})`;
-        ctx.fillRect(cx, top+bodyH, 1, size*0.25);
+      const rx = x/sw;
+
+      // 머리(해골) — 살짝 타원
+      if(rx >= 0.18 && rx <= 0.82){
+        const edge = Math.min(1, (0.5 - Math.abs(rx-0.5)) / 0.32);
+        const halfH = skullH * 0.5 * (0.55 + 0.45*edge);
+        const cy = skullTop + skullH * 0.5;
+        ctx.fillStyle = cBone;
+        ctx.fillRect(cx, cy - halfH, 1, halfH*2);
+        // 눈구멍 (좌/우)
+        if((rx >= 0.28 && rx <= 0.42) || (rx >= 0.58 && rx <= 0.72)){
+          ctx.fillStyle = cVoid;
+          ctx.fillRect(cx, skullTop + skullH*0.30, 1, skullH*0.28);
+        }
+        // 코구멍
+        if(rx >= 0.47 && rx <= 0.53){
+          ctx.fillStyle = cVoid;
+          ctx.fillRect(cx, skullTop + skullH*0.62, 1, skullH*0.18);
+        }
+        // 이빨 라인
+        if(rx >= 0.32 && rx <= 0.68){
+          const teethY = skullTop + skullH * 0.86;
+          ctx.fillStyle = cBoneShadow;
+          ctx.fillRect(cx, teethY, 1, skullH*0.1);
+          // 이빨 간격 줄무늬
+          if(Math.floor(rx*10) % 2 === 0){
+            ctx.fillStyle = cVoid;
+            ctx.fillRect(cx, teethY+1, 1, skullH*0.08);
+          }
+        }
+      }
+
+      // 몸통(갈비뼈)
+      if(rx >= 0.30 && rx <= 0.70){
+        // 갈비뼈 — 가로 줄무늬 (음영으로 표현)
+        for(let yy = 0; yy < bodyH; yy++){
+          const ry = yy / bodyH;
+          // 척추 중앙 흰선
+          if(Math.abs(rx-0.5) < 0.04){
+            ctx.fillStyle = cBone;
+            ctx.fillRect(cx, bodyTop+yy, 1, 1);
+            continue;
+          }
+          // 갈비뼈 5개 — ry 0~0.85 범위
+          const ribIndex = Math.floor(ry*5);
+          const localRib = (ry*5) - ribIndex;
+          if(ry < 0.85 && localRib < 0.5){
+            // 갈비뼈 (흰)
+            ctx.fillStyle = cBone;
+            ctx.fillRect(cx, bodyTop+yy, 1, 1);
+          } else if(ry < 0.85){
+            // 갈비뼈 사이 빈공간 (검정)
+            ctx.fillStyle = cVoid;
+            ctx.fillRect(cx, bodyTop+yy, 1, 1);
+          } else {
+            // 골반
+            ctx.fillStyle = cBoneShadow;
+            ctx.fillRect(cx, bodyTop+yy, 1, 1);
+          }
+        }
+      }
+
+      // 다리 — 두 갈래
+      if((rx >= 0.30 && rx <= 0.43) || (rx >= 0.57 && rx <= 0.70)){
+        ctx.fillStyle = cBone;
+        ctx.fillRect(cx, legTop, 1, legH);
+        // 무릎 음영
+        ctx.fillStyle = cBoneShadow;
+        ctx.fillRect(cx, legTop + legH*0.5, 1, 2);
       }
     }
-    // 눈 — F 키 대상이면 빨간 광채 효과 강화
-    const eyeY = top + size*0.25;
+
+    // 눈 광채 — F 키 대상이면 빨간 광채 (검정 해골 위에 핏빛 눈)
+    const eyeY = skullTop + skullH*0.4;
     ctx.fillStyle = e.prompt ? '#ff2020' : '#ff4040';
-    ctx.fillRect(sx+sw*0.3-1, eyeY, 3, 3);
-    ctx.fillRect(sx+sw*0.7-1, eyeY, 3, 3);
+    ctx.fillRect(sx+sw*0.34-1, eyeY, 3, 3);
+    ctx.fillRect(sx+sw*0.66-1, eyeY, 3, 3);
     // HP 바
     const hpPct = e.hp / e.maxHp;
     const barW = size * 0.9, barH = 4;
@@ -4043,12 +4211,100 @@ function _miniDrawPistol(ctx, W, H){
   ctx.restore();
 }
 
+function _miniDrawMinimap(){
+  const c = document.getElementById('mini-minimap');
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const M = _MINI.MAP;
+  const cs = W / M;
+
+  ctx.fillStyle = '#0a0a12';
+  ctx.fillRect(0, 0, W, H);
+
+  // 벽
+  for(let y=0;y<M;y++){
+    for(let x=0;x<M;x++){
+      if(_MINI.map[y]?.[x] === 1){
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(x*cs, y*cs, cs, cs);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(x*cs, y*cs, cs, 1);
+      } else {
+        ctx.fillStyle = '#1a2a18';
+        ctx.fillRect(x*cs, y*cs, cs, cs);
+      }
+    }
+  }
+
+  // 적
+  for(const e of _MINI.enemies){
+    ctx.fillStyle = e.prompt ? '#000' : '#e04040';
+    ctx.beginPath();
+    ctx.arc(e.x*cs, e.y*cs, cs*0.4, 0, Math.PI*2);
+    ctx.fill();
+    if(e.prompt){
+      ctx.strokeStyle = '#ffd040';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+  }
+
+  // 포탈 — 펄스
+  if(_MINI.portal){
+    const pulse = 0.5 + 0.5*Math.sin(performance.now()/200);
+    ctx.fillStyle = `rgba(140,220,255,${0.5+0.5*pulse})`;
+    ctx.beginPath();
+    ctx.arc(_MINI.portal.x*cs, _MINI.portal.y*cs, cs*(0.45 + 0.15*pulse), 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // 플레이어 화살표 — 시야 방향
+  const p = _MINI.player;
+  const px = p.x*cs, py = p.y*cs;
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(p.a);
+  ctx.fillStyle = '#ffe080';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cs*0.8, 0);
+  ctx.lineTo(-cs*0.5, -cs*0.6);
+  ctx.lineTo(-cs*0.25, 0);
+  ctx.lineTo(-cs*0.5, cs*0.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // 시야 콘 (반투명 노란색)
+  const fov = Math.PI/3;
+  const viewDist = cs * 3;
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(p.a);
+  ctx.fillStyle = 'rgba(255,224,128,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.lineTo(Math.cos(-fov/2)*viewDist, Math.sin(-fov/2)*viewDist);
+  ctx.lineTo(Math.cos(fov/2)*viewDist, Math.sin(fov/2)*viewDist);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 function _miniLoop(t){
   if(!_MINI.active) return;
   const dt = Math.min(0.05, (t - _MINI.lastTime)/1000 || 0.016);
   _MINI.lastTime = t;
   _miniUpdate(dt);
   _miniRender();
+  _miniDrawMinimap();
   _miniUpdateMainHUD();
   _miniUpdateOwnHUD();
   _MINI.rafId = requestAnimationFrame(_miniLoop);
@@ -4064,7 +4320,8 @@ function openMiniGame(){
   const w = Math.min(640, window.innerWidth);
   const h = Math.min(400, window.innerHeight);
   _MINI.canvas.width = w; _MINI.canvas.height = h;
-  _MINI.level = 1; _MINI.kills = 0;
+  _MINI.level = 0; _MINI.kills = 0;
+  _MINI.inLobby = true;
   _MINI.player.hp = 100; _MINI.player.maxHp = 100;
   _MINI.player.x = 8.5; _MINI.player.y = 8.5; _MINI.player.a = 0;
   _MINI.player.dashCool = 0;
@@ -4073,11 +4330,10 @@ function openMiniGame(){
   _MINI.recoil = 0; _MINI.bobTime = 0; _MINI.bobAmp = 0;
   _MINI.dashRequested = false; _MINI.meleeRequested = false;
   _MINI.zbuf = new Array(w);
-  _miniGenMap();
-  _miniSpawnEnemies();
+  _miniGenLobby();   // 로비에서 시작 — 포탈만 있고 적 없음
   _miniBindInput();
   document.getElementById('mini-ov').classList.add('active');
-  _miniMsg('🎮 WASD 이동 · SPACE 대시 · F 처치 · 클릭 발사',2200);
+  _miniMsg('🏛️ 로비 · 포탈로 진입하세요',2200);
   _MINI.lastTime = performance.now();
   _MINI.rafId = requestAnimationFrame(_miniLoop);
 }
