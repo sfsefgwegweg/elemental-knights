@@ -178,6 +178,75 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
   cursor:pointer;transition:all .15s;letter-spacing:1px;white-space:nowrap;
 }
 .exit-btn:hover{background:#3a1010;border-color:#e04040;color:#e06060;}
+/* ─── 미니게임 (레이캐스팅 1인칭) ─── */
+#mini-ov{background:#000;z-index:240;display:none;align-items:stretch;justify-content:stretch;padding:0;}
+#mini-ov.active{display:flex;}
+#mini-canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block;background:#000;cursor:crosshair;}
+#mini-hud{
+  position:absolute;top:8px;left:8px;z-index:5;
+  background:rgba(8,5,2,.78);padding:8px 10px;border:1px solid #5a3a10;
+  font-family:'Courier New',monospace;color:#f0d080;font-size:11px;
+  display:flex;flex-direction:column;gap:5px;min-width:170px;letter-spacing:1px;
+}
+.mh-row{display:flex;align-items:center;gap:6px;}
+.mh-label{min-width:18px;font-size:13px;}
+.mh-bar{flex:1;height:9px;background:#1a0c04;border:1px solid #3a2008;position:relative;}
+.mh-bar > div{height:100%;transition:width .25s;}
+.mh-num{font-size:10px;color:#c89040;min-width:60px;text-align:right;}
+.mh-potions{display:flex;gap:3px;flex-wrap:wrap;font-size:14px;}
+.mh-pot{padding:1px 4px;border:1px solid #5a3818;background:#180e04;cursor:pointer;}
+.mh-pot:hover{border-color:#c08030;}
+#mini-stats{
+  position:absolute;top:8px;right:8px;z-index:5;
+  background:rgba(8,5,2,.78);padding:8px 10px;border:1px solid #5a3a10;
+  font-family:'Courier New',monospace;color:#f0c060;font-size:11px;text-align:right;
+  letter-spacing:1px;display:flex;flex-direction:column;gap:3px;
+}
+#mini-stats .lvl{font-size:14px;color:#f0a040;}
+#mini-close-btn{
+  position:absolute;top:8px;right:50%;transform:translateX(50%);z-index:6;
+  background:rgba(40,8,8,.85);border:1px solid #c04040;color:#e06060;
+  padding:5px 14px;font-family:'Courier New',monospace;font-size:11px;
+  cursor:pointer;letter-spacing:2px;
+}
+#mini-close-btn:hover{background:#5a1010;}
+#mini-controls{
+  position:absolute;bottom:0;left:0;right:0;z-index:5;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  pointer-events:none;padding:12px;
+}
+#mini-joy{
+  width:120px;height:120px;border-radius:50%;background:rgba(40,40,80,.35);
+  border:2px solid rgba(140,140,200,.4);position:relative;pointer-events:auto;
+  touch-action:none;
+}
+#mini-joy-stick{
+  position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;
+  background:rgba(180,180,255,.55);transform:translate(-50%,-50%);
+  border:2px solid rgba(220,220,255,.7);
+}
+#mini-shoot-btn{
+  width:90px;height:90px;border-radius:50%;background:rgba(180,40,40,.55);
+  border:3px solid rgba(255,120,120,.7);color:#fff;font-size:38px;
+  pointer-events:auto;cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+}
+#mini-shoot-btn:active{background:rgba(220,80,80,.75);}
+#mini-msg{
+  position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);z-index:5;
+  font-family:'Courier New',monospace;color:#fff;font-size:24px;
+  text-shadow:0 0 12px rgba(0,0,0,.9);letter-spacing:3px;
+  background:rgba(8,5,2,.7);padding:12px 22px;border:1px solid #6a3a10;
+  text-align:center;pointer-events:none;opacity:0;transition:opacity .25s;
+}
+#mini-msg.show{opacity:1;}
+#mini-hit-vignette{
+  position:absolute;inset:0;z-index:4;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(255,40,40,.55));
+  opacity:0;transition:opacity .15s;
+}
+#mini-hit-vignette.flash{opacity:1;}
 
 /* ═══════════════════════════════════════
    BOTTOM PANEL  820 × 291
@@ -786,6 +855,7 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
   <div class="ab-label">🧪 물약:</div>
   <div id="potion-slots" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
   <div class="ab-spacer"></div>
+  <button id="mini-game-btn" class="ab-btn" style="display:none;background:#1a0d2a;border-color:#7050a0;color:#d0a0f0;" onclick="openMiniGame()">🎮 미니게임</button>
   <button id="exit-battle-btn" class="exit-btn" style="display:none;" onclick="exitBattle()">✕ 나가기</button>
   <div class="ab-sep"></div>
   <div id="stage-count" style="font-size:10px;color:#6a4820;padding:0 6px;"></div>
@@ -1070,6 +1140,29 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
       <button class="btn" style="flex:1;padding:8px;font-size:11px;" onclick="closeMyInfo()">✕ 닫기</button>
       <button class="btn btn-danger" style="flex:1;padding:8px;font-size:11px;" onclick="doLogout()">🚪 로그아웃</button>
     </div>
+  </div>
+</div>
+
+<!-- Mini Game (2.5D Raycasting Roguelike) -->
+<div id="mini-ov">
+  <canvas id="mini-canvas" width="480" height="320"></canvas>
+  <div id="mini-hit-vignette"></div>
+  <div id="mini-hud">
+    <div class="mh-row"><span class="mh-label">🛡️</span><div class="mh-bar"><div id="mh-php-fill" style="background:#50c050;width:100%"></div></div><span class="mh-num" id="mh-php-txt">100/100</span></div>
+    <div class="mh-row"><span class="mh-label">👹</span><div class="mh-bar"><div id="mh-ehp-fill" style="background:#c04040;width:100%"></div></div><span class="mh-num" id="mh-ehp-txt">-/-</span></div>
+    <div class="mh-potions" id="mh-potions"></div>
+  </div>
+  <div id="mini-stats">
+    <div class="lvl">⚔️ FLOOR <span id="mini-level">1</span></div>
+    <div>HP <span id="mini-hp">100</span>/<span id="mini-maxhp">100</span></div>
+    <div>적 <span id="mini-enemies">0</span> 남음</div>
+    <div>처치 <span id="mini-kills">0</span></div>
+  </div>
+  <button id="mini-close-btn" onclick="closeMiniGame()">✕ 본게임 복귀</button>
+  <div id="mini-msg"></div>
+  <div id="mini-controls">
+    <div id="mini-joy"><div id="mini-joy-stick"></div></div>
+    <button id="mini-shoot-btn">🔥</button>
   </div>
 </div>
 
@@ -1380,6 +1473,7 @@ function returnToTown(){
   G.player.maxHp=st.hp;
   G.player.hp=G.player.maxHp;
   document.getElementById('exit-battle-btn').style.display='none';
+  const _mb=document.getElementById('mini-game-btn'); if(_mb) _mb.style.display='none';
   showOverlay('world-ov');
   renderWorld();
   renderBottomUI();
@@ -1452,6 +1546,7 @@ function enterStage(idx){
   G.player.hp=Math.min(Math.floor(G.player.maxHp*.7+G.player.hp*.3),G.player.maxHp);
   document.getElementById('battle-log').innerHTML='';
   document.getElementById('exit-battle-btn').style.display='';
+  document.getElementById('mini-game-btn').style.display='';
   showOverlay(null); // Hide overlay, show battle
   initStarfield();
   setStageBackground(idx);
@@ -1529,6 +1624,9 @@ async function autoBattleLoop(){
   if(b.running) return;
   b.running=true;
   while(!b.over){
+    // 미니게임 진행 중에는 본 전투 일시정지
+    while(window._MINI?.active && !b.over){ await sleep(150); }
+    if(b.over) break;
     setTurn('⚔️ 공격 중','#60d060');
     await sleep(280);
     if(b.over) break;
@@ -1668,6 +1766,7 @@ async function onPlayerDead(){
   screenShake();
   await sleep(1200);
   document.getElementById('exit-battle-btn').style.display='none';
+  const _mb=document.getElementById('mini-game-btn'); if(_mb) _mb.style.display='none';
   showOverlay('gameover-ov');
 }
 
@@ -2358,21 +2457,26 @@ function renderManageOv(){
   const btn=document.getElementById('mv-synth-btn');
   if(!syn.base||syn.materials.length===0){prev.textContent='베이스 + 재료를 선택하세요';btn.disabled=true;}
   else if(syn.isStone){
-    const stone=syn.materials[0];
-    const el=stone.element;
-    const sameEl=(stone.element===syn.base.element);
+    // 여러 원소석 시뮬레이션
+    let curEl=syn.base.element;
     const raw={};
-    for(const sk of STAT_KEYS){
-      const b=stone.stats[sk]||0; if(!b) continue;
-      let rate=synthRate(stone,sk);
-      if(sameEl) rate=Math.min(rate+0.1,0.9);
-      raw[sk]=Math.floor(b*rate);
+    for(const sk of STAT_KEYS) raw[sk]=0;
+    for(const stone of syn.materials){
+      const sameEl=(stone.element===curEl);
+      for(const sk of STAT_KEYS){
+        const b=stone.stats[sk]||0; if(!b) continue;
+        let rate=synthRate(stone,sk);
+        if(sameEl) rate=Math.min(rate+0.1,0.9);
+        raw[sk]+=Math.floor(b*rate);
+      }
+      curEl=stone.element;
     }
+    const finalEl=curEl;
     const stoneGained=capGains(syn.base,raw);
     const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(stoneGained[k]>0));
     const stoneStr=Object.entries(stoneGained).filter(([,v])=>v>0)
-      .map(([k,v])=>`<span style="color:${sameEl?'#ffe080':'#80e080'}">${statSym(k)}+${v}${sameEl?'🔥':''}</span>`).join(' ');
-    prev.innerHTML=`<span style="color:#f0c060">${syn.base.name}</span> 속성 → <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span>${stoneStr?` &nbsp;+&nbsp;${stoneStr}`:''}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.base)}</span>`:''}`;
+      .map(([k,v])=>`<span style="color:#ffe080">${statSym(k)}+${v}</span>`).join(' ');
+    prev.innerHTML=`<span style="color:#f0c060">${syn.base.name}</span> → <span class="${ELEM[finalEl].cls}">${ELEM[finalEl].emoji}${ELEM[finalEl].name}</span> · 원소석 ${syn.materials.length}개${stoneStr?` &nbsp;${stoneStr}`:''}${blocked?` <span style="color:#c06030">⚠한도${statTypeCap(syn.base)}</span>`:''}`;
     btn.disabled=false;
   } else {
     const raw={};
@@ -2459,6 +2563,7 @@ function enterEndlessStage(startWave=1){
   G.player.hp=Math.min(Math.floor(G.player.maxHp*.7+G.player.hp*.3),G.player.maxHp);
   document.getElementById('battle-log').innerHTML='';
   document.getElementById('exit-battle-btn').style.display='';
+  document.getElementById('mini-game-btn').style.display='';
   showOverlay(null);
   initStarfield();
   setStageBackground(Math.floor(Math.random()*4));
@@ -2642,23 +2747,28 @@ function updateSynthPreview(){
   const btn=document.getElementById('synth-btn');
   if(!syn.base||syn.materials.length===0){res.textContent='베이스 + 재료를 선택하세요';btn.disabled=true;return;}
   if(syn.isStone){
-    const stone=syn.materials[0];
-    const el=stone.element;
-    const sameEl=(stone.element===syn.base.element);
+    // 여러 원소석 처리 시뮬레이션
+    let curEl=syn.base.element;
     const raw={};
-    for(const sk of STAT_KEYS){
-      const b=stone.stats[sk]||0; if(!b) continue;
-      let rate=synthRate(stone,sk);
-      if(sameEl) rate=Math.min(rate+0.1,0.9);
-      raw[sk]=Math.floor(b*rate);
+    for(const sk of STAT_KEYS) raw[sk]=0;
+    for(const stone of syn.materials){
+      const sameEl=(stone.element===curEl);
+      for(const sk of STAT_KEYS){
+        const b=stone.stats[sk]||0; if(!b) continue;
+        let rate=synthRate(stone,sk);
+        if(sameEl) rate=Math.min(rate+0.1,0.9);
+        raw[sk]+=Math.floor(b*rate);
+      }
+      curEl=stone.element;
     }
+    const finalEl=curEl;
     const stoneGained=capGains(syn.base,raw);
     const blocked=STAT_KEYS.some(k=>(raw[k]||0)>0&&!(stoneGained[k]>0));
     const stoneStr=Object.entries(stoneGained).filter(([,v])=>v>0)
-      .map(([k,v])=>`${statSym(k)}+${v}${sameEl?'🔥':''}`).join(' ');
+      .map(([k,v])=>`${statSym(k)}+${v}`).join(' ');
     res.innerHTML=`<span style="color:#f0c060">${syn.base.name}</span> 속성 →
-      <span class="${ELEM[el].cls}">${ELEM[el].emoji}${ELEM[el].name}</span><br>
-      ${stoneStr?`<span style="color:${sameEl?'#ffe080':'#80e080'}">${stoneStr} 강화${sameEl?' (동일속성 보너스)':''}</span><br>`:''}${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.base)})</span><br>`:''}원소석 1개 소비`;
+      <span class="${ELEM[finalEl].cls}">${ELEM[finalEl].emoji}${ELEM[finalEl].name}</span><br>
+      ${stoneStr?`<span style="color:#ffe080">${stoneStr} 강화</span><br>`:''}${blocked?`<span style="color:#c06030">⚠ 능력치 종류 한도(${statTypeCap(syn.base)})</span><br>`:''}원소석 ${syn.materials.length}개 소비`;
   } else {
     // 모든 재료 합산
     const raw={};
@@ -2738,8 +2848,13 @@ function selectSynthItem(item,isStone){
     syn.base=item;
   } else { // 'material' (또는 레거시 'left')
     if(isStone){
-      syn.materials=[item];
-      syn.isStone=true;
+      // 이미 stone 모드면 추가 (최대 4개), 아니면 새로 시작
+      if(syn.isStone){
+        if(syn.materials.length<4) syn.materials.push(item);
+      } else {
+        syn.materials=[item];
+        syn.isStone=true;
+      }
     } else {
       if(syn.isStone){ syn.materials=[]; syn.isStone=false; }
       if(!syn.materials.includes(item) && syn.materials.length<4){
@@ -2765,20 +2880,22 @@ function doSynth(){
   if(!base.bonus) base.bonus={attack:0,defense:0,hp:0,luck:0};
 
   if(syn.isStone){
-    // 원소석 합성: 속성 변환 + 능력치 강화
-    const stone=syn.materials[0];
-    const sameElBefore=(stone.element===base.element);
-    base.element=stone.element;
+    // 원소석 합성: 여러 개 동시에 처리 (속성 변환 + 능력치 강화 누적)
     const raw={};
-    for(const sk of STAT_KEYS){
-      const b=stone.stats[sk]||0; if(!b) continue;
-      let rate=synthRate(stone,sk);
-      if(sameElBefore) rate=Math.min(rate+0.1,0.9);
-      raw[sk]=Math.floor(b*rate);
+    for(const sk of STAT_KEYS) raw[sk]=0;
+    for(const stone of syn.materials){
+      const sameElBefore=(stone.element===base.element);
+      for(const sk of STAT_KEYS){
+        const b=stone.stats[sk]||0; if(!b) continue;
+        let rate=synthRate(stone,sk);
+        if(sameElBefore) rate=Math.min(rate+0.1,0.9);
+        raw[sk]+=Math.floor(b*rate);
+      }
+      base.element=stone.element; // 마지막 원소석의 속성이 최종
+      p.stones[stone.element]--;
     }
     const gains=capGains(base,raw);
     for(const sk of STAT_KEYS) if(gains[sk]) base.bonus[sk]=(base.bonus[sk]||0)+gains[sk];
-    p.stones[stone.element]--;
   } else {
     // 아이템 합성: 모든 재료를 동시에 흡수 (합산 후 한도 적용)
     const raw={};
@@ -3106,6 +3223,7 @@ function _showSaved(){
 // ── finishStageClear 에 저장 연결 ──
 function finishStageClear(){
   document.getElementById('exit-battle-btn').style.display='none';
+  const _mb=document.getElementById('mini-game-btn'); if(_mb) _mb.style.display='none';
   // 스테이지 종료 시 체력 전체 회복
   const st=pStats();
   G.player.maxHp=st.hp;
@@ -3138,6 +3256,7 @@ function exitBattle(){
   G.player.maxHp=st.hp;
   G.player.hp=G.player.maxHp;
   document.getElementById('exit-battle-btn').style.display='none';
+  const _mb=document.getElementById('mini-game-btn'); if(_mb) _mb.style.display='none';
   saveGame();
   showOverlay('world-ov');
   renderWorld();
@@ -3224,6 +3343,516 @@ window.addEventListener('load', ()=>{
   const pImg=document.getElementById('player-img');
   if(pImg) playSpriteAnim(pImg, 'mage', 'idle');
 });
+
+// ════════════════════════════════════════════════════════════════
+//  미니게임 — 2.5D 1인칭 레이캐스팅 로그라이크
+// ════════════════════════════════════════════════════════════════
+const _MINI = window._MINI = {
+  active: false,
+  canvas: null, ctx: null, vignette: null,
+  map: [], MAP: 16,
+  player: { x:8.5, y:8.5, a:0, hp:100, maxHp:100 },
+  enemies: [],
+  particles: [],
+  zbuf: [],
+  level: 1, kills: 0,
+  keys: {},
+  joy: { x:0, y:0, active:false, cx:0, cy:0 },
+  shooting: false, shootCool: 0,
+  lastTime: 0, rafId: null,
+  msgTimer: null,
+};
+
+// 맵 생성: 16x16, 외벽 + 무작위 내부 벽들
+function _miniGenMap(){
+  const M = _MINI.MAP;
+  const map = Array.from({length:M},()=>Array(M).fill(0));
+  for(let i=0;i<M;i++){ map[0][i]=1; map[M-1][i]=1; map[i][0]=1; map[i][M-1]=1; }
+  // 무작위 내부 벽 블록 — 레벨이 높을수록 더 많음
+  const blocks = 6 + Math.min(_MINI.level, 10);
+  for(let b=0;b<blocks;b++){
+    const w = 1 + (Math.random()<0.4?1:0);
+    const h = 1 + (Math.random()<0.4?1:0);
+    const sx = 2 + Math.floor(Math.random()*(M-4-w));
+    const sy = 2 + Math.floor(Math.random()*(M-4-h));
+    // 중심 8.5,8.5 너무 가깝게는 두지 않음
+    if(Math.abs(sx-8)<2 && Math.abs(sy-8)<2) continue;
+    for(let y=sy;y<sy+h;y++) for(let x=sx;x<sx+w;x++) map[y][x]=1;
+  }
+  _MINI.map = map;
+}
+
+// 적 스폰
+function _miniSpawnEnemies(){
+  _MINI.enemies = [];
+  const n = 3 + Math.min(_MINI.level, 7);
+  const M = _MINI.MAP;
+  for(let i=0;i<n;i++){
+    let x,y,tries=0;
+    do {
+      x = 1.5 + Math.floor(Math.random()*(M-3));
+      y = 1.5 + Math.floor(Math.random()*(M-3));
+      tries++;
+    } while ((_MINI.map[y|0]?.[x|0]===1 ||
+             (Math.abs(x-_MINI.player.x)<3 && Math.abs(y-_MINI.player.y)<3)) && tries<50);
+    const isElite = Math.random() < 0.15 + _MINI.level*0.02;
+    _MINI.enemies.push({
+      x, y,
+      hp: isElite ? 60+_MINI.level*15 : 30+_MINI.level*8,
+      maxHp: isElite ? 60+_MINI.level*15 : 30+_MINI.level*8,
+      atk: 5 + _MINI.level*1.5 + (isElite?5:0),
+      speed: 0.018 + _MINI.level*0.001 + (isElite?0.005:0),
+      elite: isElite,
+      atkCool: 0,
+    });
+  }
+}
+
+function _miniMsg(text, dur=1400){
+  const el = document.getElementById('mini-msg');
+  if(!el) return;
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(_MINI.msgTimer);
+  _MINI.msgTimer = setTimeout(()=>el.classList.remove('show'), dur);
+}
+
+// 레이캐스팅 (DDA 알고리즘)
+function _miniCastRay(angle){
+  const px = _MINI.player.x, py = _MINI.player.y;
+  const dx = Math.cos(angle), dy = Math.sin(angle);
+  const ddx = Math.abs(1/dx), ddy = Math.abs(1/dy);
+  let mx = px|0, my = py|0;
+  const sx = dx<0?-1:1, sy = dy<0?-1:1;
+  let sdx = dx<0 ? (px-mx)*ddx : (mx+1-px)*ddx;
+  let sdy = dy<0 ? (py-my)*ddy : (my+1-py)*ddy;
+  let side = 0;
+  for(let i=0;i<60;i++){
+    if(sdx<sdy){ sdx+=ddx; mx+=sx; side=0; }
+    else { sdy+=ddy; my+=sy; side=1; }
+    if(_MINI.map[my]?.[mx]===1) break;
+  }
+  const dist = side===0 ? (mx-px+(1-sx)/2)/dx : (my-py+(1-sy)/2)/dy;
+  return { dist:Math.max(0.01,Math.abs(dist)), side };
+}
+
+// 본게임 HUD 갱신
+function _miniUpdateMainHUD(){
+  const p = G.player;
+  const st = pStats();
+  const phpFill = document.getElementById('mh-php-fill');
+  const phpTxt = document.getElementById('mh-php-txt');
+  const ehpFill = document.getElementById('mh-ehp-fill');
+  const ehpTxt = document.getElementById('mh-ehp-txt');
+  if(phpFill){
+    const pct = Math.max(0, Math.min(100, p.hp/p.maxHp*100));
+    phpFill.style.width = pct+'%';
+    phpFill.style.background = pct>50?'#50c050':pct>25?'#e0a040':'#e04040';
+    phpTxt.textContent = Math.floor(p.hp)+'/'+Math.floor(p.maxHp);
+  }
+  const en = G.battle?.enemy;
+  if(ehpFill){
+    if(en && !G.battle.over){
+      const pct = Math.max(0,Math.min(100, en.hp/en.maxHp*100));
+      ehpFill.style.width = pct+'%';
+      ehpTxt.textContent = Math.floor(en.hp)+'/'+Math.floor(en.maxHp);
+    } else {
+      ehpFill.style.width = '0%';
+      ehpTxt.textContent = '-/-';
+    }
+  }
+  const potBox = document.getElementById('mh-potions');
+  if(potBox){
+    potBox.innerHTML = '';
+    p.potions.forEach((pt,i)=>{
+      const d=document.createElement('div');
+      d.className='mh-pot'; d.textContent=pt.emoji;
+      d.title=`${pt.name}: ${pt.desc}`;
+      d.onclick=()=>{ usePotion(i); _miniUpdateMainHUD(); };
+      potBox.appendChild(d);
+    });
+  }
+}
+
+function _miniUpdateOwnHUD(){
+  document.getElementById('mini-hp').textContent = Math.max(0,Math.floor(_MINI.player.hp));
+  document.getElementById('mini-maxhp').textContent = _MINI.player.maxHp;
+  document.getElementById('mini-enemies').textContent = _MINI.enemies.length;
+  document.getElementById('mini-kills').textContent = _MINI.kills;
+  document.getElementById('mini-level').textContent = _MINI.level;
+}
+
+// 입력
+function _miniBindInput(){
+  // 키보드
+  document.addEventListener('keydown', _MINI._kd = e=>{
+    if(!_MINI.active) return;
+    _MINI.keys[e.key.toLowerCase()] = true;
+    if(e.key===' ') { _MINI.shooting = true; e.preventDefault(); }
+  });
+  document.addEventListener('keyup', _MINI._ku = e=>{
+    if(!_MINI.active) return;
+    _MINI.keys[e.key.toLowerCase()] = false;
+    if(e.key===' ') _MINI.shooting = false;
+  });
+
+  // 마우스 (화면 클릭)
+  const canvas = _MINI.canvas;
+  canvas.addEventListener('mousedown', _MINI._md = e=>{
+    if(!_MINI.active) return;
+    if(e.button===0) _MINI.shooting = true;
+  });
+  canvas.addEventListener('mouseup', _MINI._mu = e=>{ _MINI.shooting = false; });
+  canvas.addEventListener('mousemove', _MINI._mm = e=>{
+    if(!_MINI.active) return;
+    if(document.pointerLockElement===canvas){
+      _MINI.player.a += e.movementX * 0.003;
+    }
+  });
+  canvas.addEventListener('click', ()=>{
+    if(_MINI.active && !document.pointerLockElement) canvas.requestPointerLock?.();
+  });
+
+  // 터치 조이스틱
+  const joy = document.getElementById('mini-joy');
+  const stick = document.getElementById('mini-joy-stick');
+  const handleJoy = (clientX, clientY)=>{
+    const r = joy.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    let dx = clientX-cx, dy = clientY-cy;
+    const dist = Math.hypot(dx,dy);
+    const max = r.width/2 - 10;
+    if(dist>max){ dx*=max/dist; dy*=max/dist; }
+    stick.style.transform = `translate(${dx-26}px,${dy-26}px)`;
+    _MINI.joy.x = dx/max; _MINI.joy.y = dy/max;
+  };
+  joy.addEventListener('touchstart', e=>{ _MINI.joy.active=true; handleJoy(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, {passive:false});
+  joy.addEventListener('touchmove', e=>{ if(_MINI.joy.active) handleJoy(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, {passive:false});
+  joy.addEventListener('touchend', e=>{ _MINI.joy.active=false; _MINI.joy.x=0; _MINI.joy.y=0; stick.style.transform='translate(-50%,-50%)'; });
+
+  // 회전: 캔버스 우측 절반을 스와이프 — 모바일 전용
+  let touchLook = null;
+  canvas.addEventListener('touchstart', e=>{
+    const t = e.changedTouches[0];
+    if(t.clientX > window.innerWidth/2){
+      touchLook = { id:t.identifier, x:t.clientX };
+    }
+  }, {passive:true});
+  canvas.addEventListener('touchmove', e=>{
+    if(!touchLook) return;
+    for(const t of e.changedTouches){
+      if(t.identifier===touchLook.id){
+        const dx = t.clientX - touchLook.x;
+        _MINI.player.a += dx * 0.006;
+        touchLook.x = t.clientX;
+      }
+    }
+  }, {passive:true});
+  canvas.addEventListener('touchend', e=>{
+    for(const t of e.changedTouches){
+      if(touchLook && t.identifier===touchLook.id) touchLook=null;
+    }
+  }, {passive:true});
+
+  // 발사 버튼
+  const sb = document.getElementById('mini-shoot-btn');
+  sb.addEventListener('touchstart', e=>{ _MINI.shooting=true; e.preventDefault(); }, {passive:false});
+  sb.addEventListener('touchend', e=>{ _MINI.shooting=false; });
+  sb.addEventListener('mousedown', ()=>_MINI.shooting=true);
+  sb.addEventListener('mouseup', ()=>_MINI.shooting=false);
+}
+
+function _miniUnbindInput(){
+  document.removeEventListener('keydown', _MINI._kd);
+  document.removeEventListener('keyup', _MINI._ku);
+}
+
+// 발사 — 가장 가까운 가시범위 내 적에게 적중
+function _miniShoot(){
+  if(_MINI.shootCool>0) return;
+  _MINI.shootCool = 0.32; // 320ms 쿨다운
+  const p = _MINI.player;
+  // 카메라 정면 좌표
+  let best = -1, bestDist = 999;
+  for(let i=0;i<_MINI.enemies.length;i++){
+    const e = _MINI.enemies[i];
+    const dx = e.x - p.x, dy = e.y - p.y;
+    const dist = Math.hypot(dx, dy);
+    if(dist > 12) continue;
+    let ang = Math.atan2(dy, dx) - p.a;
+    while(ang > Math.PI) ang -= Math.PI*2;
+    while(ang < -Math.PI) ang += Math.PI*2;
+    // 화면 중앙 ±15도 안에 있어야 적중
+    if(Math.abs(ang) > 0.26) continue;
+    // 벽이 사이에 없는지 — 레이캐스팅 거리 비교
+    const ray = _miniCastRay(Math.atan2(dy,dx));
+    if(ray.dist + 0.1 < dist) continue;
+    if(dist < bestDist){ bestDist = dist; best = i; }
+  }
+  if(best>=0){
+    const en = _MINI.enemies[best];
+    const dmg = 20 + Math.floor(Math.random()*10) + _MINI.level*3;
+    en.hp -= dmg;
+    _MINI.particles.push({ x:en.x, y:en.y, ttl:0.3, kind:'hit', txt:'-'+dmg });
+    if(en.hp<=0){
+      _MINI.kills++;
+      _MINI.enemies.splice(best,1);
+      _MINI.particles.push({ x:en.x, y:en.y, ttl:0.6, kind:'kill' });
+    }
+  } else {
+    // 빗나감 — 화면 정면 멀리 점멸 (시각 피드백)
+    _MINI.particles.push({ x:p.x+Math.cos(p.a)*4, y:p.y+Math.sin(p.a)*4, ttl:0.15, kind:'miss' });
+  }
+}
+
+// 업데이트 (한 프레임)
+function _miniUpdate(dt){
+  const p = _MINI.player;
+  // 이동
+  let mvX = 0, mvY = 0;
+  const k = _MINI.keys;
+  if(k['w']||k['arrowup']) mvY += 1;
+  if(k['s']||k['arrowdown']) mvY -= 1;
+  if(k['a']) mvX -= 1;
+  if(k['d']) mvX += 1;
+  if(k['arrowleft']) p.a -= 1.8*dt;
+  if(k['arrowright']) p.a += 1.8*dt;
+  if(_MINI.joy.active){
+    mvY += -_MINI.joy.y;
+    mvX += _MINI.joy.x * 0.8;
+  }
+  const speed = 2.8;
+  // 전진 = 정면 방향
+  const fx = Math.cos(p.a), fy = Math.sin(p.a);
+  const sx = -fy, sy = fx;
+  let nx = p.x + (fx*mvY + sx*mvX) * speed * dt;
+  let ny = p.y + (fy*mvY + sy*mvX) * speed * dt;
+  // 벽 충돌 (개별 축 슬라이드)
+  if(_MINI.map[p.y|0]?.[nx|0]!==1) p.x = nx;
+  if(_MINI.map[ny|0]?.[p.x|0]!==1) p.y = ny;
+
+  // 발사
+  if(_MINI.shooting && _MINI.shootCool<=0) _miniShoot();
+  if(_MINI.shootCool>0) _MINI.shootCool -= dt;
+
+  // 적 AI: 플레이어 추적 + 근접 공격
+  for(const e of _MINI.enemies){
+    const dx = p.x - e.x, dy = p.y - e.y;
+    const dist = Math.hypot(dx, dy);
+    if(dist > 0.001){
+      // 시야가 통하는지(벽 검사)는 단순화 — 항상 추적
+      const ang = Math.atan2(dy, dx);
+      let ex = e.x + Math.cos(ang)*e.speed;
+      let ey = e.y + Math.sin(ang)*e.speed;
+      // 다른 적과 겹침 회피는 단순 거리 체크로 생략
+      if(_MINI.map[e.y|0]?.[ex|0]!==1) e.x = ex;
+      if(_MINI.map[ey|0]?.[e.x|0]!==1) e.y = ey;
+    }
+    e.atkCool = Math.max(0, e.atkCool - dt);
+    if(dist < 0.9 && e.atkCool<=0){
+      e.atkCool = 1.0;
+      _MINI.player.hp -= e.atk;
+      const v = document.getElementById('mini-hit-vignette');
+      v.classList.add('flash');
+      setTimeout(()=>v.classList.remove('flash'),120);
+    }
+  }
+
+  // 파티클 수명 감소
+  for(let i=_MINI.particles.length-1;i>=0;i--){
+    _MINI.particles[i].ttl -= dt;
+    if(_MINI.particles[i].ttl<=0) _MINI.particles.splice(i,1);
+  }
+
+  // 죽음
+  if(_MINI.player.hp <= 0){
+    _miniMsg('💀 GAME OVER · 본게임 복귀',2500);
+    setTimeout(()=>closeMiniGame(), 1800);
+    _MINI.player.hp = 0;
+  }
+  // 클리어 → 다음 층
+  if(_MINI.enemies.length === 0){
+    _MINI.level++;
+    // 회복 보상
+    _MINI.player.hp = Math.min(_MINI.player.maxHp, _MINI.player.hp + 25);
+    _miniMsg(`✨ FLOOR ${_MINI.level} 진입`,1600);
+    _miniGenMap();
+    _miniSpawnEnemies();
+    _MINI.player.x = 8.5; _MINI.player.y = 8.5;
+  }
+}
+
+// 렌더 — 천장/바닥, 벽, 적(스프라이트)
+function _miniRender(){
+  const ctx = _MINI.ctx;
+  const W = _MINI.canvas.width, H = _MINI.canvas.height;
+  // 하늘(상단) + 바닥(하단)
+  const skyGrad = ctx.createLinearGradient(0,0,0,H/2);
+  skyGrad.addColorStop(0,'#1a0e2a'); skyGrad.addColorStop(1,'#3a1c3a');
+  ctx.fillStyle = skyGrad; ctx.fillRect(0,0,W,H/2);
+  const flrGrad = ctx.createLinearGradient(0,H/2,0,H);
+  flrGrad.addColorStop(0,'#1a0c08'); flrGrad.addColorStop(1,'#3a2010');
+  ctx.fillStyle = flrGrad; ctx.fillRect(0,H/2,W,H/2);
+
+  // 벽 캐스팅
+  const fov = Math.PI/3;
+  const zbuf = _MINI.zbuf;
+  const p = _MINI.player;
+  for(let i=0;i<W;i++){
+    const rayA = p.a - fov/2 + (i/W)*fov;
+    const { dist, side } = _miniCastRay(rayA);
+    // 피쉬아이 보정
+    const corr = dist * Math.cos(rayA - p.a);
+    zbuf[i] = corr;
+    const wallH = Math.min(H, (H / Math.max(0.1, corr)) * 0.95);
+    const top = (H - wallH)/2;
+    const shade = Math.max(0, 220 - corr*22);
+    const r = (shade * (side?0.55:0.78))|0;
+    const g = (shade * 0.32)|0;
+    const b = (shade * 0.22)|0;
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(i, top, 1, wallH);
+  }
+
+  // 적 — 거리순 정렬 후 빌보드 렌더
+  const enemies = _MINI.enemies.map(e=>{
+    const dx = e.x - p.x, dy = e.y - p.y;
+    return { e, dist: dx*dx+dy*dy };
+  }).sort((a,b)=>b.dist-a.dist);
+
+  for(const {e} of enemies){
+    const dx = e.x - p.x, dy = e.y - p.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    let ang = Math.atan2(dy, dx) - p.a;
+    while(ang > Math.PI) ang -= Math.PI*2;
+    while(ang < -Math.PI) ang += Math.PI*2;
+    if(Math.abs(ang) > fov/2 + 0.2) continue;
+    if(dist < 0.2) continue;
+    const screenX = W/2 + (ang / (fov/2)) * (W/2);
+    const size = Math.min(H, (H / dist) * 0.7);
+    const top = H/2 - size/2;
+    const sx = (screenX - size/2)|0, sw = size|0;
+    // z-buffer 검사 후 픽셀 칸 단위로 그리기
+    for(let x=0;x<sw;x++){
+      const cx = sx + x;
+      if(cx<0||cx>=W) continue;
+      if(_MINI.zbuf[cx] < dist) continue;
+      // 가운데일수록 진한 색
+      const ratio = x/sw;
+      const baseR = e.elite ? 200 : 80;
+      const baseG = e.elite ? 40 : 80;
+      const baseB = e.elite ? 200 : 40;
+      const shade = Math.max(60, 220 - dist*18);
+      ctx.fillStyle = `rgb(${(baseR*shade/255)|0},${(baseG*shade/255)|0},${(baseB*shade/255)|0})`;
+      // 위쪽 70%는 몸통, 아래쪽은 다리
+      const bodyH = size*0.75;
+      ctx.fillRect(cx, top, 1, bodyH);
+      // 다리
+      if(ratio>0.3 && ratio<0.7){
+        ctx.fillStyle = `rgb(${(baseR*shade*0.6/255)|0},${(baseG*shade*0.6/255)|0},${(baseB*shade*0.6/255)|0})`;
+        ctx.fillRect(cx, top+bodyH, 1, size*0.25);
+      }
+    }
+    // 눈 — 두 점
+    const eyeY = top + size*0.25;
+    ctx.fillStyle = '#ff4040';
+    ctx.fillRect(sx+sw*0.3-1, eyeY, 3, 3);
+    ctx.fillRect(sx+sw*0.7-1, eyeY, 3, 3);
+    // HP 바
+    const hpPct = e.hp / e.maxHp;
+    const barW = size * 0.9, barH = 4;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(sx + (sw-barW)/2, top-8, barW, barH);
+    ctx.fillStyle = hpPct>0.5?'#e0c040':'#e04040';
+    ctx.fillRect(sx + (sw-barW)/2, top-8, barW*hpPct, barH);
+  }
+
+  // 파티클 표시
+  for(const pa of _MINI.particles){
+    const dx = pa.x - p.x, dy = pa.y - p.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    let ang = Math.atan2(dy, dx) - p.a;
+    while(ang > Math.PI) ang -= Math.PI*2;
+    while(ang < -Math.PI) ang += Math.PI*2;
+    if(Math.abs(ang) > fov/2) continue;
+    if(dist < 0.1) continue;
+    const screenX = W/2 + (ang / (fov/2)) * (W/2);
+    const top = H/2 - 10;
+    const alpha = pa.ttl;
+    if(pa.kind==='hit'){
+      ctx.fillStyle = `rgba(255,200,0,${alpha*3})`;
+      ctx.font = 'bold 20px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(pa.txt||'-', screenX, top);
+    } else if(pa.kind==='kill'){
+      ctx.fillStyle = `rgba(255,80,80,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(screenX, top, 30*(0.6-pa.ttl), 0, Math.PI*2);
+      ctx.fill();
+    } else if(pa.kind==='miss'){
+      ctx.fillStyle = `rgba(255,255,255,${alpha*4})`;
+      ctx.fillRect(W/2-3, H/2-3, 6, 6);
+    }
+  }
+
+  // 조준 십자
+  ctx.strokeStyle = 'rgba(255,255,255,.7)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W/2-8, H/2); ctx.lineTo(W/2+8, H/2);
+  ctx.moveTo(W/2, H/2-8); ctx.lineTo(W/2, H/2+8);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+
+  // 발사 쿨다운 표시
+  if(_MINI.shootCool > 0){
+    ctx.fillStyle = `rgba(255,80,80,${_MINI.shootCool/0.32})`;
+    ctx.fillRect(W/2-12, H/2+12, 24, 3);
+  }
+}
+
+function _miniLoop(t){
+  if(!_MINI.active) return;
+  const dt = Math.min(0.05, (t - _MINI.lastTime)/1000 || 0.016);
+  _MINI.lastTime = t;
+  _miniUpdate(dt);
+  _miniRender();
+  _miniUpdateMainHUD();
+  _miniUpdateOwnHUD();
+  _MINI.rafId = requestAnimationFrame(_miniLoop);
+}
+
+function openMiniGame(){
+  if(_MINI.active) return;
+  _MINI.active = true;
+  _MINI.canvas = document.getElementById('mini-canvas');
+  _MINI.ctx = _MINI.canvas.getContext('2d');
+  _MINI.vignette = document.getElementById('mini-hit-vignette');
+  // 캔버스 내부 해상도를 화면 크기에 맞춰 약간 조정 (성능)
+  const w = Math.min(640, window.innerWidth);
+  const h = Math.min(400, window.innerHeight);
+  _MINI.canvas.width = w; _MINI.canvas.height = h;
+  _MINI.level = 1; _MINI.kills = 0;
+  _MINI.player.hp = _MINI.player.maxHp;
+  _MINI.player.x = 8.5; _MINI.player.y = 8.5; _MINI.player.a = 0;
+  _MINI.zbuf = new Array(w);
+  _miniGenMap();
+  _miniSpawnEnemies();
+  _miniBindInput();
+  document.getElementById('mini-ov').classList.add('active');
+  _miniMsg('🎮 1인칭 던전 시작!',1400);
+  _MINI.lastTime = performance.now();
+  _MINI.rafId = requestAnimationFrame(_miniLoop);
+}
+
+function closeMiniGame(){
+  if(!_MINI.active) return;
+  _MINI.active = false;
+  cancelAnimationFrame(_MINI.rafId);
+  _miniUnbindInput();
+  document.exitPointerLock?.();
+  document.getElementById('mini-ov').classList.remove('active');
+}
 </script>
 </body>
 </html>
