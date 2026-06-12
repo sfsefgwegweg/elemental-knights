@@ -96,14 +96,6 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
 .char-ring{position:absolute;bottom:10px;width:70px;height:14px;border-radius:50%;opacity:.5;filter:blur(3px);}
 
 #particle-layer{position:absolute;inset:0;pointer-events:none;z-index:30;}
-/* 플레이어가 든 권총 뒷모습 */
-#player-gun-back{
-  position:absolute;bottom:8px;left:50%;
-  transform:translateX(-50%);
-  width:130px;height:65px;
-  z-index:35;pointer-events:none;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.55));
-}
 
 /* ── Info panel (right) ── */
 #info-section{
@@ -822,32 +814,6 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
       </div>
     </div>
     <div id="particle-layer"></div>
-    <!-- 플레이어가 든 권총 뒷모습 (1인칭 hud 느낌) -->
-    <svg id="player-gun-back" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <!-- 슬라이드(뒤쪽 면) -->
-      <rect x="60" y="22" width="80" height="32" fill="#2a2a32" stroke="#0a0a0a" stroke-width="2"/>
-      <rect x="60" y="22" width="80" height="5" fill="#3c3c46"/>
-      <!-- 가늠자 노치 -->
-      <rect x="88" y="10" width="24" height="14" fill="#1a1a1a" stroke="#000" stroke-width="1.5"/>
-      <rect x="98" y="6" width="4" height="6" fill="#fff"/>
-      <!-- 공이치기(해머) -->
-      <rect x="92" y="24" width="16" height="6" fill="#666"/>
-      <!-- 그립 -->
-      <path d="M 72 54 L 128 54 L 122 94 L 78 94 Z" fill="#1c1c22" stroke="#000" stroke-width="2"/>
-      <!-- 그립 패턴 -->
-      <line x1="84" y1="62" x2="116" y2="62" stroke="#3a3a40" stroke-width="1.5"/>
-      <line x1="84" y1="72" x2="116" y2="72" stroke="#3a3a40" stroke-width="1.5"/>
-      <line x1="84" y1="82" x2="116" y2="82" stroke="#3a3a40" stroke-width="1.5"/>
-      <!-- 손 (그립 감싸는) -->
-      <path d="M 60 56 Q 56 76 70 95 L 130 95 Q 144 76 140 56 L 130 60 Q 128 75 122 88 L 78 88 Q 72 75 70 60 Z" fill="#d6a878" stroke="#7a4828" stroke-width="1.5"/>
-      <!-- 손가락 마디 -->
-      <line x1="74" y1="68" x2="80" y2="72" stroke="#8a5838" stroke-width="1"/>
-      <line x1="74" y1="76" x2="80" y2="80" stroke="#8a5838" stroke-width="1"/>
-      <line x1="74" y1="84" x2="80" y2="88" stroke="#8a5838" stroke-width="1"/>
-      <line x1="126" y1="68" x2="120" y2="72" stroke="#8a5838" stroke-width="1"/>
-      <line x1="126" y1="76" x2="120" y2="80" stroke="#8a5838" stroke-width="1"/>
-      <line x1="126" y1="84" x2="120" y2="88" stroke="#8a5838" stroke-width="1"/>
-    </svg>
   </div>
 
   <!-- Info -->
@@ -1321,7 +1287,7 @@ const ITEMS={
   potion_lck:{id:'potion_lck',name:'행운물약',type:'potion',element:'normal',emoji:'🍵',img:'images/potion_lck.png',
     stats:{attack:0,defense:0,hp:0,luck:40},turns:3,desc:'행운+40 (3턴)'},
   potion_hp:{id:'potion_hp',name:'회복물약',type:'potion',element:'normal',emoji:'❤️‍🔥',img:'images/potion_hp.png',
-    stats:{attack:0,defense:0,hp:50,luck:0},healPct:40,turns:0,desc:'최대 HP의 40% 회복'},
+    stats:{attack:0,defense:0,hp:50,luck:0},healPct:25,turns:0,desc:'최대 HP의 25% 회복'},
   stone_water:{id:'stone_water',name:'물의 원소석',type:'stone',element:'water',emoji:'💧',
     stats:{attack:0,defense:15,hp:0,luck:0},desc:'방어+15 강화 / 속성 변환',specialty:['defense']},
   stone_fire:{id:'stone_fire',name:'불의 원소석',type:'stone',element:'fire',emoji:'🔥',
@@ -1444,7 +1410,7 @@ function pStats(){
     if(eq){
       atk +=(eq.stats.attack||0)+(eq.bonus?.attack||0);
       def +=(eq.stats.defense||0)+(eq.bonus?.defense||0);
-      hp  +=((eq.stats.hp||0)+(eq.bonus?.hp||0))*.7;
+      hp  +=((eq.stats.hp||0)+(eq.bonus?.hp||0))*.5;
       luck+=(eq.stats.luck||0)+(eq.bonus?.luck||0);
       if(sl==='weapon'&&eq.element!=='normal') el=eq.element;
     }
@@ -2437,6 +2403,19 @@ function showStageClear(){
   if(!anyStone) sr.innerHTML='<div style="color:#4a6a4a;font-size:11px;">없음</div>';
 
   showOverlay('stageclear-ov');
+
+  // 미니게임 중이면 자동으로 최대 픽 수만큼 무작위 선택 후 완료
+  if(window._MINI?.active){
+    setTimeout(()=>{
+      const cards = document.querySelectorAll('#scc-loot-grid .loot-card:not(.taken)');
+      const max = Math.min(4, cards.length);
+      const idxs = [...Array(cards.length).keys()].sort(()=>Math.random()-0.5).slice(0,max);
+      idxs.forEach((idx,i)=>{ setTimeout(()=>cards[idx]?.click(), i*150); });
+      setTimeout(()=>{
+        if(typeof finishStageClear==='function') finishStageClear();
+      }, max*150 + 600);
+    }, 700);
+  }
 }
 
 function finishStageClear(){
@@ -2592,6 +2571,15 @@ function showLoot(){
   const sr=document.getElementById('stone-reward');
   sr.textContent=l.stoneEl?`🪨 ${ELEM[l.stoneEl].emoji} ${ELEM[l.stoneEl].name} 원소석 +1!`:'';
   showOverlay('loot-ov');
+  // 미니게임 중이면 자동으로 랜덤 1개 선택
+  if(window._MINI?.active && l.items.length > 0){
+    setTimeout(()=>{
+      if(G.phase==='loot'){
+        const pick = l.items[Math.floor(Math.random()*l.items.length)];
+        takeLoot(pick);
+      }
+    }, 700);
+  }
 }
 
 function takeLoot(item){
@@ -2732,20 +2720,31 @@ function showWaveLoot(wave){
     renderBottomUI();
     setTimeout(()=>continueEndlessWave(),500);
   };
+  const cardItemPairs = [];
   choices.forEach(item=>{
     const c=document.createElement('div');c.className='loot-card slide-in';
     c.innerHTML=`<div class="lc-emoji">${itemIconHtml(item,'44px')}</div>
       <div class="lc-name">${item.name}</div>
       <div class="lc-stats">${shortStatStr(item)||'-'}</div>
       <div class="lc-el ${ELEM[item.element].cls}">${ELEM[item.element].emoji} ${ELEM[item.element].name}</div>`;
-    // click + touchend 둘 다 받아 모바일 응답성 강화
     const handler=(ev)=>{ ev.preventDefault?.(); pickItem(item,c); };
     c.addEventListener('click', handler);
     c.addEventListener('touchend', handler, {passive:false});
     cardsRow.appendChild(c);
+    cardItemPairs.push({item,c});
   });
 
   showOverlay('loot-ov');
+
+  // 미니게임 중이면 자동으로 3개 중 하나 랜덤 선택
+  if(window._MINI?.active && cardItemPairs.length > 0){
+    setTimeout(()=>{
+      if(!resolved){
+        const pick = cardItemPairs[Math.floor(Math.random()*cardItemPairs.length)];
+        pickItem(pick.item, pick.c);
+      }
+    }, 700);
+  }
 }
 
 function continueEndlessWave(){
@@ -3466,6 +3465,23 @@ function _miniGenMap(){
 // 적 스폰
 function _miniSpawnEnemies(){
   _MINI.enemies = [];
+  _MINI.projectiles = [];
+  // 5스테이지 = 보스
+  if(_MINI.level === 5){
+    _MINI.enemies.push({
+      x: 8.5, y: 4.5,
+      hp: 500, maxHp: 500,
+      atk: 25,
+      speed: 0.024,
+      atkCool: 0,
+      kind: 'boss',
+      isBoss: true,
+      prompt: false,
+      stun: 0,
+      shootCool: 1.5,
+    });
+    return;
+  }
   const n = 3 + Math.min(_MINI.level, 7);
   const M = _MINI.MAP;
   for(let i=0;i<n;i++){
@@ -3476,12 +3492,15 @@ function _miniSpawnEnemies(){
       tries++;
     } while ((_MINI.map[y|0]?.[x|0]===1 ||
              (Math.abs(x-_MINI.player.x)<3 && Math.abs(y-_MINI.player.y)<3)) && tries<50);
+    const isRanged = Math.random() < 0.32 + _MINI.level*0.03;
     _MINI.enemies.push({
       x, y,
       hp: 100, maxHp: 100,
-      atk: 5 + _MINI.level*1.5,
+      atk: 10,           // 칼 적 = 10 데미지 (근접 닿으면)
       speed: 0.018 + _MINI.level*0.001,
       atkCool: 0,
+      kind: isRanged ? 'ranged' : 'melee',
+      shootCool: 0.8 + Math.random()*1.2,  // 활 적 발사 쿨다운
       prompt: false,
       stun: 0,
     });
@@ -3754,33 +3773,104 @@ function _miniUpdate(dt){
   // 적 AI + prompt 후보 탐색
   _MINI.promptEnemy = null;
   let closestPrompt = 1.6; // F 키 활성 범위
+  _MINI.projectiles = _MINI.projectiles || [];
   for(const e of _MINI.enemies){
     e.stun = Math.max(0, e.stun - dt);
+    e.atkCool = Math.max(0, e.atkCool - dt);
+    e.shootCool = Math.max(0, (e.shootCool||0) - dt);
     const dx = p.x - e.x, dy = p.y - e.y;
     const dist = Math.hypot(dx, dy);
-    if(dist > 0.001 && e.stun<=0){
-      const ang = Math.atan2(dy, dx);
-      let ex = e.x + Math.cos(ang)*e.speed;
-      let ey = e.y + Math.sin(ang)*e.speed;
-      if(_MINI.map[e.y|0]?.[ex|0]!==1) e.x = ex;
-      if(_MINI.map[ey|0]?.[e.x|0]!==1) e.y = ey;
+
+    if(e.kind === 'ranged'){
+      // 활 적: 거리 유지 + 투사체 발사
+      if(dist > 0.001 && e.stun<=0){
+        const ang = Math.atan2(dy, dx);
+        let dir = 0;
+        if(dist > 5.5) dir = 1;       // 너무 멀면 접근
+        else if(dist < 3.2) dir = -1; // 너무 가까우면 후퇴
+        if(dir !== 0){
+          const sp = e.speed * 0.9;
+          let ex = e.x + Math.cos(ang)*sp*dir;
+          let ey = e.y + Math.sin(ang)*sp*dir;
+          if(_MINI.map[e.y|0]?.[ex|0]!==1) e.x = ex;
+          if(_MINI.map[ey|0]?.[e.x|0]!==1) e.y = ey;
+        }
+      }
+      // 발사 (사정거리 8, 가까우면 발사 안함)
+      if(e.shootCool<=0 && dist > 1.5 && dist < 9 && e.stun<=0){
+        const ang = Math.atan2(p.y - e.y, p.x - e.x);
+        const speed = 4.2;
+        _MINI.projectiles.push({
+          x: e.x + Math.cos(ang)*0.5,
+          y: e.y + Math.sin(ang)*0.5,
+          vx: Math.cos(ang)*speed,
+          vy: Math.sin(ang)*speed,
+          ttl: 3.0,
+          dmg: 5,
+        });
+        e.shootCool = 1.4 + Math.random()*0.6;
+      }
+    } else {
+      // 칼 / 보스: 추적 + 근접 공격
+      if(dist > 0.001 && e.stun<=0){
+        const ang = Math.atan2(dy, dx);
+        const sp = e.speed;
+        let ex = e.x + Math.cos(ang)*sp;
+        let ey = e.y + Math.sin(ang)*sp;
+        if(_MINI.map[e.y|0]?.[ex|0]!==1) e.x = ex;
+        if(_MINI.map[ey|0]?.[e.x|0]!==1) e.y = ey;
+      }
+      const meleeRange = e.isBoss ? 1.3 : 0.9;
+      if(dist < meleeRange && e.atkCool<=0 && e.stun<=0){
+        e.atkCool = 1.0;
+        _MINI.player.hp -= e.atk;
+        const v = document.getElementById('mini-hit-vignette');
+        v.classList.add('flash');
+        setTimeout(()=>v.classList.remove('flash'),120);
+      }
+      // 보스는 추가로 가끔 투사체 발사
+      if(e.isBoss && e.shootCool<=0 && dist > 1.6 && dist < 11){
+        const ang = Math.atan2(p.y - e.y, p.x - e.x);
+        const sp = 4.5;
+        // 3발 산탄
+        for(let k=-1;k<=1;k++){
+          const a = ang + k*0.18;
+          _MINI.projectiles.push({
+            x:e.x + Math.cos(a)*0.6, y:e.y + Math.sin(a)*0.6,
+            vx: Math.cos(a)*sp, vy: Math.sin(a)*sp,
+            ttl: 3.5, dmg: 8,
+          });
+        }
+        e.shootCool = 2.8;
+      }
     }
-    e.atkCool = Math.max(0, e.atkCool - dt);
-    if(dist < 0.9 && e.atkCool<=0 && e.stun<=0){
-      e.atkCool = 1.0;
-      _MINI.player.hp -= e.atk;
-      const v = document.getElementById('mini-hit-vignette');
-      v.classList.add('flash');
-      setTimeout(()=>v.classList.remove('flash'),120);
-    }
-    // 가장 가까운 prompt 후보
-    if(dist < closestPrompt){
+
+    // F 프롬프트 — 근접/보스만 대상 (보스는 1.4 이내)
+    if((e.kind === 'melee' || e.isBoss) && dist < closestPrompt){
       closestPrompt = dist;
       _MINI.promptEnemy = e;
     }
     e.prompt = false;
   }
   if(_MINI.promptEnemy) _MINI.promptEnemy.prompt = true;
+
+  // 투사체 업데이트
+  for(let i=_MINI.projectiles.length-1; i>=0; i--){
+    const pr = _MINI.projectiles[i];
+    pr.x += pr.vx * dt;
+    pr.y += pr.vy * dt;
+    pr.ttl -= dt;
+    if(pr.ttl <= 0){ _MINI.projectiles.splice(i,1); continue; }
+    if(_MINI.map[pr.y|0]?.[pr.x|0] === 1){ _MINI.projectiles.splice(i,1); continue; }
+    const ddx = pr.x - p.x, ddy = pr.y - p.y;
+    if(ddx*ddx + ddy*ddy < 0.36){
+      _MINI.player.hp -= pr.dmg;
+      _MINI.projectiles.splice(i,1);
+      const v = document.getElementById('mini-hit-vignette');
+      v.classList.add('flash');
+      setTimeout(()=>v.classList.remove('flash'),120);
+    }
+  }
 
   // F 키 근접 처치
   if(_MINI.meleeRequested){
@@ -3844,8 +3934,13 @@ function _miniUpdate(dt){
       _MINI.inLobby = false;
       _MINI.level++;
       _MINI.player.hp = Math.min(_MINI.player.maxHp, _MINI.player.hp + 30);
-      _miniMsg(`✨ STAGE ${_MINI.level}`, 1500);
+      if(_MINI.level === 5){
+        _miniMsg(`👑 STAGE 5 — BOSS!`, 2200);
+      } else {
+        _miniMsg(`✨ STAGE ${_MINI.level}`, 1500);
+      }
       _MINI.portal = null;
+      _MINI.projectiles = [];
       _miniGenMap();
       _miniSpawnEnemies();
       _MINI.player.x = 8.5; _MINI.player.y = 8.5;
@@ -3910,15 +4005,22 @@ function _miniRender(){
     if(Math.abs(ang) > fov/2 + 0.2) continue;
     if(dist < 0.2) continue;
     const screenX = W/2 + (ang / (fov/2)) * (W/2);
-    const size = Math.min(H, (H / dist) * 0.7);
+    // 보스는 1.8배 크게
+    const bossMul = e.isBoss ? 1.8 : 1.0;
+    const size = Math.min(H*0.95, (H / dist) * 0.7 * bossMul);
     const top = H/2 - size/2;
     const sx = (screenX - size/2)|0, sw = size|0;
     // 해골 — 픽셀 칸 단위로 그리기 (z-buffer 검사 포함)
     const shade = Math.max(80, 230 - dist*16);
-    // 뼈 베이스: 따뜻한 흰색 (prompt면 검정)
-    const boneR = e.prompt ? 12 : 240;
-    const boneG = e.prompt ? 12 : 232;
-    const boneB = e.prompt ? 18 : 200;
+    // 뼈 베이스: 종류별 색상
+    // - 보스: 어두운 핏빛 (prompt → 검정)
+    // - 활: 청회색 (prompt → 검정)
+    // - 칼: 따뜻한 흰색 (prompt → 검정)
+    let boneR, boneG, boneB;
+    if(e.prompt){ boneR=12; boneG=12; boneB=18; }
+    else if(e.isBoss){ boneR=200; boneG=100; boneB=100; }
+    else if(e.kind === 'ranged'){ boneR=200; boneG=220; boneB=240; }
+    else { boneR=240; boneG=232; boneB=200; }
     const cBone = `rgb(${(boneR*shade/255)|0},${(boneG*shade/255)|0},${(boneB*shade/255)|0})`;
     const cBoneShadow = `rgb(${(boneR*shade*0.6/255)|0},${(boneG*shade*0.6/255)|0},${(boneB*shade*0.6/255)|0})`;
     const cVoid = e.prompt ? `rgb(${(40*shade/255)|0},${(20*shade/255)|0},${(10*shade/255)|0})` : '#0a0606';
@@ -4009,9 +4111,58 @@ function _miniRender(){
 
     // 눈 광채 — F 키 대상이면 빨간 광채 (검정 해골 위에 핏빛 눈)
     const eyeY = skullTop + skullH*0.4;
-    ctx.fillStyle = e.prompt ? '#ff2020' : '#ff4040';
-    ctx.fillRect(sx+sw*0.34-1, eyeY, 3, 3);
-    ctx.fillRect(sx+sw*0.66-1, eyeY, 3, 3);
+    ctx.fillStyle = e.prompt ? '#ff2020' : (e.isBoss ? '#ff4020' : '#ff4040');
+    const eyeS = Math.max(3, size*0.025|0);
+    ctx.fillRect(sx+sw*0.34-1, eyeY, eyeS, eyeS);
+    ctx.fillRect(sx+sw*0.66-1, eyeY, eyeS, eyeS);
+
+    // 무기 표시 — 칼 적은 옆에 칼, 활 적은 옆에 활
+    if(!e.prompt && !e.isBoss){
+      const cxMid = (sx + sw/2)|0;
+      if(e.kind === 'melee'){
+        // 칼 — 오른편 아래
+        const swX = sx + sw*0.85;
+        const swY = top + size*0.45;
+        const swL = size*0.32;
+        ctx.fillStyle = '#c0c0c0';
+        ctx.fillRect(swX, swY, 3, swL);
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(swX-2, swY+swL, 7, 5);
+      } else if(e.kind === 'ranged'){
+        // 활 — 왼편 옆
+        const bowX = sx + sw*0.05;
+        const bowY = top + size*0.30;
+        const bowH = size*0.45;
+        ctx.strokeStyle = '#8b5a2b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(bowX, bowY);
+        ctx.quadraticCurveTo(bowX - bowH*0.4, bowY + bowH*0.5, bowX, bowY + bowH);
+        ctx.stroke();
+        // 시위
+        ctx.strokeStyle = '#f0f0f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(bowX, bowY);
+        ctx.lineTo(bowX, bowY + bowH);
+        ctx.stroke();
+      }
+    }
+    // 보스 표시 — 머리 위 왕관 + "BOSS"
+    if(e.isBoss){
+      // 왕관
+      ctx.fillStyle = '#ffd040';
+      const crX = sx + sw*0.3, crY = top - size*0.05, crW = sw*0.4, crH = size*0.08;
+      ctx.fillRect(crX, crY, crW, crH*0.5);
+      ctx.fillRect(crX, crY-crH*0.5, crW*0.18, crH*0.5);
+      ctx.fillRect(crX+crW*0.41, crY-crH*0.7, crW*0.18, crH*0.7);
+      ctx.fillRect(crX+crW*0.82, crY-crH*0.5, crW*0.18, crH*0.5);
+      // 보스 텍스트
+      ctx.font = 'bold 14px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff4040';
+      ctx.fillText('BOSS', sx + sw/2, top - size*0.15);
+    }
     // HP 바
     const hpPct = e.hp / e.maxHp;
     const barW = size * 0.9, barH = 4;
@@ -4034,6 +4185,37 @@ function _miniRender(){
       ctx.fillText('F', screenX, top + size*0.5);
       ctx.lineWidth = 1;
     }
+  }
+
+  // 투사체 — 작은 빛나는 화살/구체로 빌보드 렌더
+  for(const pr of (_MINI.projectiles||[])){
+    const dx = pr.x - p.x, dy = pr.y - p.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    let ang = Math.atan2(dy, dx) - p.a;
+    while(ang > Math.PI) ang -= Math.PI*2;
+    while(ang < -Math.PI) ang += Math.PI*2;
+    if(Math.abs(ang) > fov/2 + 0.15) continue;
+    if(dist < 0.1) continue;
+    const screenX = W/2 + (ang / (fov/2)) * (W/2);
+    const size = Math.max(4, Math.min(28, (H / dist) * 0.07));
+    const cy = H/2;
+    const cxI = screenX|0;
+    if(_MINI.zbuf[cxI] < dist) continue;
+    // 글로우
+    ctx.fillStyle = 'rgba(255,200,80,0.4)';
+    ctx.beginPath();
+    ctx.arc(screenX, cy, size*1.6, 0, Math.PI*2);
+    ctx.fill();
+    // 본체
+    ctx.fillStyle = '#ffaa20';
+    ctx.beginPath();
+    ctx.arc(screenX, cy, size, 0, Math.PI*2);
+    ctx.fill();
+    // 코어
+    ctx.fillStyle = '#fff8b0';
+    ctx.beginPath();
+    ctx.arc(screenX, cy, size*0.45, 0, Math.PI*2);
+    ctx.fill();
   }
 
   // 포탈 — 거리에 따라 빌보드 렌더
@@ -4146,66 +4328,132 @@ function _miniRender(){
   }
 }
 
-// 권총 그리기 — 화면 우하단 1인칭 시점
+// 권총 그리기 — 뒷모습(1인칭 후방 시점), 화면 중앙 하단, 크게
 function _miniDrawPistol(ctx, W, H){
-  const bobX = Math.sin(_MINI.bobTime*8) * 5 * _MINI.bobAmp;
-  const bobY = Math.abs(Math.sin(_MINI.bobTime*8)) * 6 * _MINI.bobAmp;
+  const bobX = Math.sin(_MINI.bobTime*8) * 7 * _MINI.bobAmp;
+  const bobY = Math.abs(Math.sin(_MINI.bobTime*8)) * 9 * _MINI.bobAmp;
   const recoil = _MINI.recoil; // 0~1
-  const baseX = W * 0.62 + bobX;
-  const baseY = H - 70 + bobY + recoil*16;
+  const s = 1.7; // 크기 배율
+
+  const slideH = 38 * s;
+  const slideW = 110 * s;
+  const gripH  = 75 * s;
+  const totalH = slideH + gripH;
+
+  // 화면 중앙 하단 (대시 바보다 위)
+  const cx = W * 0.5 + bobX;
+  const cy = H - 40 - totalH + bobY + recoil*22;
 
   ctx.save();
-  ctx.translate(baseX, baseY);
-  ctx.rotate(-0.22 + recoil*0.18);
+  ctx.translate(cx, cy);
 
-  // 손 (피부)
-  ctx.fillStyle = '#d6a878';
-  ctx.fillRect(0, 32, 36, 50);
-  ctx.fillStyle = '#b88858';
-  ctx.fillRect(0, 32, 36, 6);
+  // 슬라이드(뒤쪽 평면) — 직사각형
+  ctx.fillStyle = '#2a2a32';
+  ctx.fillRect(-slideW/2, 0, slideW, slideH);
+  // 슬라이드 상단 하이라이트
+  ctx.fillStyle = '#3e3e4a';
+  ctx.fillRect(-slideW/2, 0, slideW, 5*s);
+  // 슬라이드 하단 그림자
+  ctx.fillStyle = '#181820';
+  ctx.fillRect(-slideW/2, slideH - 4*s, slideW, 4*s);
+  // 슬라이드 결(가로 라인)
+  ctx.fillStyle = '#1a1a20';
+  for(let i=0;i<5;i++){
+    const lx = -slideW/2 + 12*s + i*8*s;
+    ctx.fillRect(lx, 8*s, 2, slideH - 16*s);
+  }
 
-  // 권총 본체
-  ctx.fillStyle = '#2c2c34';
-  ctx.fillRect(-12, 14, 70, 24);
-  ctx.fillStyle = '#3c3c48';
-  ctx.fillRect(-12, 14, 70, 4);
+  // 가늠자 노치 (위로 튀어나옴)
+  ctx.fillStyle = '#181820';
+  ctx.fillRect(-18*s, -12*s, 36*s, 12*s);
+  // 노치 U자 흰 점
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-3*s, -14*s, 6*s, 7*s);
 
-  // 그립
+  // 공이치기(해머)
+  ctx.fillStyle = '#5a5a5a';
+  ctx.fillRect(-10*s, 0, 20*s, 9*s);
+  ctx.fillStyle = '#2c2c30';
+  ctx.fillRect(-8*s, 4*s, 16*s, 4*s);
+
+  // 그립 (사다리꼴, 위가 넓음)
+  const gripTop = slideH;
+  const gripTopW = 70 * s;
+  const gripBotW = 56 * s;
   ctx.fillStyle = '#1c1c22';
-  ctx.fillRect(0, 32, 16, 36);
-  ctx.fillStyle = '#2a2a30';
-  ctx.fillRect(2, 36, 2, 28);
-  ctx.fillRect(8, 36, 2, 28);
-
-  // 방아쇠 가드
-  ctx.strokeStyle = '#1c1c22';
-  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(20, 34, 8, 0, Math.PI);
-  ctx.stroke();
-  ctx.lineWidth = 1;
+  ctx.moveTo(-gripTopW/2, gripTop);
+  ctx.lineTo(gripTopW/2, gripTop);
+  ctx.lineTo(gripBotW/2, gripTop + gripH);
+  ctx.lineTo(-gripBotW/2, gripTop + gripH);
+  ctx.closePath();
+  ctx.fill();
 
-  // 총열
-  ctx.fillStyle = '#18181e';
-  ctx.fillRect(42, 16, 26, 12);
-  ctx.fillStyle = '#0a0a0e';
-  ctx.fillRect(64, 18, 4, 8);
+  // 그립 양옆 음영
+  ctx.fillStyle = '#0e0e12';
+  ctx.fillRect(-gripTopW/2, gripTop, 4*s, gripH);
+  ctx.fillRect(gripTopW/2 - 4*s, gripTop, 4*s, gripH);
 
-  // 가늠쇠
-  ctx.fillStyle = '#666';
-  ctx.fillRect(48, 11, 4, 4);
+  // 그립 가로 텍스처
+  ctx.fillStyle = '#3a3a40';
+  for(let i=0;i<4;i++){
+    const y = gripTop + 10*s + i*16*s;
+    const w = gripTopW - 12*s - i*3*s;
+    ctx.fillRect(-w/2, y, w, 2*s);
+  }
 
-  // 머즐 플래시 (반동 직후)
-  if(recoil > 0.5){
-    const flashA = (recoil - 0.5) * 2;
-    ctx.fillStyle = `rgba(255,220,80,${flashA})`;
+  // 손 — 왼손 (그립 좌측 감쌈)
+  ctx.fillStyle = '#d6a878';
+  ctx.beginPath();
+  ctx.moveTo(-gripTopW/2 - 4*s, gripTop + 4*s);
+  ctx.quadraticCurveTo(-gripTopW/2 - 30*s, gripTop + gripH*0.45, -gripBotW/2 - 10*s, gripTop + gripH);
+  ctx.lineTo(-gripBotW/2 + 2*s, gripTop + gripH);
+  ctx.lineTo(-gripTopW/2 + 2*s, gripTop + 6*s);
+  ctx.closePath();
+  ctx.fill();
+
+  // 손 — 오른손 (그립 우측 감쌈)
+  ctx.beginPath();
+  ctx.moveTo(gripTopW/2 + 4*s, gripTop + 4*s);
+  ctx.quadraticCurveTo(gripTopW/2 + 30*s, gripTop + gripH*0.45, gripBotW/2 + 10*s, gripTop + gripH);
+  ctx.lineTo(gripBotW/2 - 2*s, gripTop + gripH);
+  ctx.lineTo(gripTopW/2 - 2*s, gripTop + 6*s);
+  ctx.closePath();
+  ctx.fill();
+
+  // 손 음영 + 손가락 마디
+  ctx.strokeStyle = '#7a4828';
+  ctx.lineWidth = 1.5*s;
+  for(let i=1;i<5;i++){
+    const y = gripTop + 8*s + i*14*s;
     ctx.beginPath();
-    ctx.arc(72, 22, 16, 0, Math.PI*2);
+    ctx.moveTo(-gripTopW/2 - 22*s, y);
+    ctx.lineTo(-gripTopW/2 - 6*s, y + 4*s);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(gripTopW/2 + 22*s, y);
+    ctx.lineTo(gripTopW/2 + 6*s, y + 4*s);
+    ctx.stroke();
+  }
+  // 손 외곽선
+  ctx.lineWidth = 1.5;
+
+  // 머즐 플래시 — 발사 직후 화면 위쪽으로 번쩍
+  if(recoil > 0.4){
+    const flashA = (recoil - 0.4) * 1.8;
+    // 큰 반사광
+    ctx.fillStyle = `rgba(255,220,80,${flashA*0.7})`;
+    ctx.beginPath();
+    ctx.arc(0, -10*s, 60*s, 0, Math.PI*2);
     ctx.fill();
+    // 중심 광
     ctx.fillStyle = `rgba(255,255,200,${flashA})`;
     ctx.beginPath();
-    ctx.arc(72, 22, 8, 0, Math.PI*2);
+    ctx.arc(0, -10*s, 25*s, 0, Math.PI*2);
     ctx.fill();
+    // 슬라이드에 반사
+    ctx.fillStyle = `rgba(255,200,80,${flashA*0.5})`;
+    ctx.fillRect(-slideW/2, 0, slideW, slideH*0.4);
   }
 
   ctx.restore();
@@ -4239,9 +4487,12 @@ function _miniDrawMinimap(){
 
   // 적
   for(const e of _MINI.enemies){
-    ctx.fillStyle = e.prompt ? '#000' : '#e04040';
+    let color = e.prompt ? '#000' : '#e04040';
+    if(e.isBoss) color = '#ff2080';
+    else if(e.kind === 'ranged') color = '#60c0e0';
+    ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(e.x*cs, e.y*cs, cs*0.4, 0, Math.PI*2);
+    ctx.arc(e.x*cs, e.y*cs, cs*(e.isBoss?0.7:0.4), 0, Math.PI*2);
     ctx.fill();
     if(e.prompt){
       ctx.strokeStyle = '#ffd040';
@@ -4249,6 +4500,13 @@ function _miniDrawMinimap(){
       ctx.stroke();
       ctx.lineWidth = 1;
     }
+  }
+  // 투사체
+  for(const pr of (_MINI.projectiles||[])){
+    ctx.fillStyle = '#ffaa20';
+    ctx.beginPath();
+    ctx.arc(pr.x*cs, pr.y*cs, Math.max(1.5, cs*0.15), 0, Math.PI*2);
+    ctx.fill();
   }
 
   // 포탈 — 펄스
