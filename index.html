@@ -224,11 +224,13 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
   cursor:pointer;letter-spacing:2px;
 }
 #mini-close-btn:hover{background:#5a1010;}
+/* 터치 컨트롤: 기본 숨김 (PC), 모바일에서만 표시 */
 #mini-controls{
   position:absolute;bottom:0;left:0;right:0;z-index:5;
-  display:flex;justify-content:space-between;align-items:flex-end;
+  display:none;justify-content:space-between;align-items:flex-end;
   pointer-events:none;padding:12px;
 }
+#mini-ov.touch-mode #mini-controls{display:flex;}
 #mini-joy{
   width:120px;height:120px;border-radius:50%;background:rgba(40,40,80,.35);
   border:2px solid rgba(140,140,200,.4);position:relative;pointer-events:auto;
@@ -239,14 +241,25 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
   background:rgba(180,180,255,.55);transform:translate(-50%,-50%);
   border:2px solid rgba(220,220,255,.7);
 }
-#mini-shoot-btn{
-  width:90px;height:90px;border-radius:50%;background:rgba(180,40,40,.55);
-  border:3px solid rgba(255,120,120,.7);color:#fff;font-size:38px;
+#mini-action-btns{
+  display:flex;align-items:flex-end;gap:14px;pointer-events:none;
+}
+#mini-shoot-btn,#mini-melee-btn{
+  border-radius:50%;color:#fff;
   pointer-events:auto;cursor:pointer;font-family:inherit;
   display:flex;align-items:center;justify-content:center;
   user-select:none;-webkit-user-select:none;touch-action:none;
 }
+#mini-shoot-btn{
+  width:90px;height:90px;background:rgba(180,40,40,.55);
+  border:3px solid rgba(255,120,120,.7);font-size:38px;
+}
 #mini-shoot-btn:active{background:rgba(220,80,80,.75);}
+#mini-melee-btn{
+  width:72px;height:72px;background:rgba(180,140,40,.5);
+  border:3px solid rgba(255,210,90,.7);font-size:30px;
+}
+#mini-melee-btn:active{background:rgba(220,180,70,.75);}
 #mini-msg{
   position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);z-index:5;
   font-family:'Courier New',monospace;color:#fff;font-size:24px;
@@ -1193,7 +1206,10 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
   <div id="mini-msg"></div>
   <div id="mini-controls">
     <div id="mini-joy"><div id="mini-joy-stick"></div></div>
-    <button id="mini-shoot-btn">🔥</button>
+    <div id="mini-action-btns">
+      <button id="mini-melee-btn">🗡️</button>
+      <button id="mini-shoot-btn">🔥</button>
+    </div>
   </div>
 </div>
 
@@ -3676,6 +3692,12 @@ function _miniBindInput(){
   sb.addEventListener('touchend', e=>{ _MINI.shooting=false; });
   sb.addEventListener('mousedown', ()=>_MINI.shooting=true);
   sb.addEventListener('mouseup', ()=>_MINI.shooting=false);
+
+  // 근접(F) 버튼 — 모바일용
+  const mb = document.getElementById('mini-melee-btn');
+  const doMelee = (e)=>{ e.preventDefault(); if(_MINI.promptEnemy) _MINI.meleeRequested = true; };
+  mb.addEventListener('touchstart', doMelee, {passive:false});
+  mb.addEventListener('mousedown', doMelee);
 }
 
 function _miniUnbindInput(){
@@ -4591,7 +4613,11 @@ function openMiniGame(){
   _MINI.zbuf = new Array(w);
   _miniGenLobby();   // 로비에서 시작 — 포탈만 있고 적 없음
   _miniBindInput();
-  document.getElementById('mini-ov').classList.add('active');
+  const miniOv = document.getElementById('mini-ov');
+  // 터치 지원 기기에서만 가상 컨트롤(조이스틱·발사·근접) 표시
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  miniOv.classList.toggle('touch-mode', isTouch);
+  miniOv.classList.add('active');
   _miniMsg('🏛️ 로비 · 포탈로 진입하세요',2200);
   _MINI.lastTime = performance.now();
   _MINI.rafId = requestAnimationFrame(_miniLoop);
