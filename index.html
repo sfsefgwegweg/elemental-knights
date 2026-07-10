@@ -1433,6 +1433,7 @@ function critMult(luck){
 }
 
 const BASE_HP = 150;   // 플레이어 고정 기본 체력 (장비로만 추가됨, 복리 아님)
+const HP_MULT = 11;    // 장비 생명력 1당 실제 최대 체력 증가량 (예: +310 → 150+310*11≈3560)
 
 function pStats(){
   const p=G.player;
@@ -1443,7 +1444,7 @@ function pStats(){
     if(eq){
       atk +=(eq.stats.attack||0)+(eq.bonus?.attack||0);
       def +=(eq.stats.defense||0)+(eq.bonus?.defense||0);
-      hp  +=((eq.stats.hp||0)+(eq.bonus?.hp||0))*.5;
+      hp  +=((eq.stats.hp||0)+(eq.bonus?.hp||0))*HP_MULT;
       luck+=(eq.stats.luck||0)+(eq.bonus?.luck||0);
       if(sl==='weapon'&&eq.element!=='normal') el=eq.element;
     }
