@@ -903,7 +903,7 @@ button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
       <div class="stat-cell"><span class="sk">HP</span><br><span class="sv" id="sp-hp">100</span></div>
       <div class="stat-cell"><span class="sk">공격</span><br><span class="sv" id="sp-atk">-</span></div>
       <div class="stat-cell"><span class="sk">방어</span><br><span class="sv" id="sp-def">-</span></div>
-      <div class="stat-cell"><span class="sk">행운</span><br><span class="sv" id="sp-lck">-</span>%</div>
+      <div class="stat-cell"><span class="sk">크리</span><br><span class="sv" id="sp-lck">-</span>%</div>
     </div>
     <div class="sp-title">장비</div>
     <div class="equip-slots">
@@ -1287,7 +1287,7 @@ const ITEMS={
   bark_armor:{id:'bark_armor',name:'나무갑옷',type:'armor',element:'grass',emoji:'🌿',img:'images/bark_armor.png',
     stats:{attack:0,defense:10,hp:18,luck:0},desc:'나무 갑옷'},
   lucky_charm:{id:'lucky_charm',name:'행운의부적',type:'accessory',element:'normal',emoji:'🍀',img:'images/lucky_charm.png',
-    stats:{attack:0,defense:0,hp:0,luck:20},desc:'크리티컬 +20%',specialty:['luck']},
+    stats:{attack:0,defense:0,hp:0,luck:20},desc:'행운 +20 (크리 확률·배율↑)',specialty:['luck']},
   power_ring:{id:'power_ring',name:'힘의반지',type:'accessory',element:'normal',emoji:'💍',img:'images/power_ring.png',
     stats:{attack:10,defense:0,hp:0,luck:0},desc:'공격력 반지',specialty:['attack']},
   guardian_amulet:{id:'guardian_amulet',name:'수호목걸이',type:'accessory',element:'normal',emoji:'📿',img:'images/guardian_amulet.png',
@@ -1418,6 +1418,20 @@ let G={
   endlessCheckpoint:0, // 다음 도전 시작 가능 웨이브 (10웨이브 보스 클리어 시 +1 갱신)
 };
 
+// ── 행운 → 크리티컬 시스템 (포화 곡선) ──
+// 행운이 낮을 땐 확률이 잘 오르지만, 높아질수록 점점 오르기 어려워지고
+// 최대 60%에서 포화. 대신 행운이 높으면 크리티컬 배율이 계속 커진다.
+const CRIT_MAX = 0.60;   // 크리티컬 확률 상한 (60%)
+const CRIT_K   = 90;     // 곡선 계수 (클수록 완만하게 오름)
+function critChance(luck){
+  luck = Math.max(0, luck);
+  return CRIT_MAX * luck / (luck + CRIT_K);   // 0 → 60%로 서서히 포화
+}
+function critMult(luck){
+  luck = Math.max(0, luck);
+  return 1.6 + luck * 0.005;   // 기본 1.6배, 행운 100당 +0.5배
+}
+
 function pStats(){
   const p=G.player;
   let atk=p.baseAtk,def=p.baseDef,hp=p.maxHp,luck=p.baseLuck,el='normal';
@@ -1436,7 +1450,7 @@ function pStats(){
     if(b.stat==='defense') def+=b.amount;
     if(b.stat==='luck') luck+=b.amount;
   }
-  return {atk:Math.max(1,atk),def:Math.max(0,def),hp:Math.max(10,Math.floor(hp)),luck:Math.min(95,luck),el};
+  return {atk:Math.max(1,atk),def:Math.max(0,def),hp:Math.max(10,Math.floor(hp)),luck:Math.max(0,luck),el};
 }
 
 function iInst(t){return{...t,stats:{...t.stats},bonus:{attack:0,defense:0,hp:0,luck:0}};}
@@ -1712,8 +1726,8 @@ async function doPlayerAttack(){
   const b=G.battle;const en=b.enemy;const st=pStats();
   let dmg=Math.max(1,st.atk-Math.floor(en.defense*.4));
   const mult=elemMult(st.el,en.element);
-  const isCrit=Math.random()*100<st.luck;
-  if(isCrit) dmg=Math.floor(dmg*2);
+  const isCrit=Math.random()<critChance(st.luck);
+  if(isCrit) dmg=Math.floor(dmg*critMult(st.luck));
   dmg=Math.max(1,Math.floor(dmg*mult));
   await animPlayerAttack(isCrit,st.el);
   en.hp=Math.max(0,en.hp-dmg);
@@ -2080,7 +2094,7 @@ function updateAllUI(){
   document.getElementById('p-hp-text').textContent=`${p.hp}/${st2.hp}`;
   document.getElementById('p-atk').textContent=st.atk;
   document.getElementById('p-def').textContent=st.def;
-  document.getElementById('p-lck').textContent=st.luck;
+  document.getElementById('p-lck').textContent=Math.round(critChance(st.luck)*100);
   const pelB=document.getElementById('p-el-badge');
   pelB.textContent=ELEM[st.el].emoji+ELEM[st.el].name;
   pelB.className='mini-stat '+ELEM[st.el].cls;
@@ -2112,7 +2126,7 @@ function renderBottomUI(){
   document.getElementById('sp-hp').textContent=`${p.hp}/${st.hp}`;
   document.getElementById('sp-atk').textContent=st.atk;
   document.getElementById('sp-def').textContent=st.def;
-  document.getElementById('sp-lck').textContent=st.luck;
+  document.getElementById('sp-lck').textContent=Math.round(critChance(st.luck)*100);
 
   // Equipment slots
   const slotDefaultIco={weapon:'🗡️',armor:'🛡️',accessory:'💍'};
