@@ -1432,9 +1432,12 @@ function critMult(luck){
   return 1.6 + luck * 0.005;   // 기본 1.6배, 행운 100당 +0.5배
 }
 
+const BASE_HP = 150;   // 플레이어 고정 기본 체력 (장비로만 추가됨, 복리 아님)
+
 function pStats(){
   const p=G.player;
-  let atk=p.baseAtk,def=p.baseDef,hp=p.maxHp,luck=p.baseLuck,el='normal';
+  // 체력도 공격/방어/행운처럼 고정 기본값에서 시작해야 복리(누적 중복)로 불어나지 않음
+  let atk=p.baseAtk,def=p.baseDef,hp=(p.baseHp||BASE_HP),luck=p.baseLuck,el='normal';
   for(const sl of ['weapon','armor','accessory']){
     const eq=p.equipment[sl];
     if(eq){
@@ -3180,6 +3183,10 @@ async function loadGame(){
     G.progress    = d.progress    ?? [false,false,false,false];
   G.endlessBest = d.endlessBest ?? 0;
   G.endlessCheckpoint = d.endlessCheckpoint ?? 0;
+    // 예전 저장값(복리 버그로 부풀려진 maxHp)을 장비 기준으로 재계산해 정상화
+    p.buffs = [];
+    p.maxHp = pStats().hp;
+    p.hp = Math.min(p.hp, p.maxHp);
     return true;
   } catch(e){ console.error('불러오기 실패:', e); return false; }
 }
